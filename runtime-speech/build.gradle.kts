@@ -43,6 +43,10 @@ kotlin {
         }
     }
 
+    val isMacOs = org.gradle.internal.os.OperatingSystem.current().isMacOsX
+
+    if (isMacOs) {
+
     // Tool finder utility
     fun findTool(name: String, extraCandidates: List<String> = emptyList()): String {
         System.getenv("${name.uppercase()}_PATH")?.let { if (file(it).canExecute()) return it }
@@ -248,6 +252,8 @@ kotlin {
             "--config", "Release"
         )
     }
+
+    } // end isMacOs
 
     sourceSets {
         commonMain.dependencies {
