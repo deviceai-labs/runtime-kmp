@@ -54,6 +54,8 @@ static std::atomic<bool> g_translate{false};
 static std::atomic<int> g_max_threads{4};
 static std::atomic<bool> g_use_gpu{true};
 static std::atomic<bool> g_use_vad{true};
+static std::atomic<bool> g_single_segment{true};
+static std::atomic<bool> g_no_context{true};
 
 // ═══════════════════════════════════════════════════════════════
 //                      HELPER FUNCTIONS
@@ -173,7 +175,9 @@ Java_com_speechkmp_SpeechBridge_nativeInitStt(
     jboolean translate,
     jint maxThreads,
     jboolean useGpu,
-    jboolean useVad) {
+    jboolean useVad,
+    jboolean singleSegment,
+    jboolean noContext) {
 
     std::lock_guard<std::mutex> lock(g_mutex);
 
@@ -189,6 +193,8 @@ Java_com_speechkmp_SpeechBridge_nativeInitStt(
     g_max_threads = maxThreads;
     g_use_gpu = useGpu;
     g_use_vad = useVad;
+    g_single_segment = singleSegment;
+    g_no_context = noContext;
 
     LOGI("Initializing Whisper with model: %s", path.c_str());
     LOGI("Config: language=%s, translate=%d, threads=%d, gpu=%d, vad=%d",
@@ -215,6 +221,8 @@ Java_com_speechkmp_SpeechBridge_nativeInitStt(
     g_params.print_progress = false;
     g_params.print_realtime = false;
     g_params.print_timestamps = false;
+    g_params.single_segment   = g_single_segment;
+    g_params.no_context       = g_no_context;
 
     LOGI("Whisper model initialized successfully");
     return JNI_TRUE;
@@ -397,9 +405,18 @@ Java_com_speechkmp_SpeechBridge_nativeTranscribeAudio(
          t_jni_copy_done - t_jni_start, (int)audio.size(), audio_sec);
 
     // ── Whisper inference ──────────────────────────────────────────
+    // Auto-derive audio_ctx from actual sample count so the encoder's attention
+    // window matches the real audio length instead of always running over 30s.
+    // Formula: each whisper frame = 160 samples; encoder conv halves it → /320.
+    struct whisper_full_params params = g_params;
+    int auto_ctx = (static_cast<int>(audio.size()) + 319) / 320;
+    params.audio_ctx = std::min(auto_ctx, 1500);
+    LOGI("[WHISPER-CFG] audio_ctx set to %d (from %d samples = %.2fs)",
+         params.audio_ctx, (int)audio.size(), audio_sec);
+
     long t_infer_start = now_ms();
 
-    if (whisper_full(g_ctx, g_params, audio.data(), audio.size()) != 0) {
+    if (whisper_full(g_ctx, params, audio.data(), audio.size()) != 0) {
         LOGE("Whisper inference failed");
         return env->NewStringUTF("");
     }
@@ -411,10 +428,9 @@ Java_com_speechkmp_SpeechBridge_nativeTranscribeAudio(
 
     // whisper_print_timings() goes to stderr — visible on Desktop/iOS but not Android logcat.
     // Log the config that directly drives performance so we can diagnose from logcat.
-    LOGI("[WHISPER-CFG] n_threads=%d  audio_ctx=%d (0=full 30s window)  gpu=%d",
-         (int)g_params.n_threads, (int)g_params.audio_ctx, (int)g_use_gpu.load());
-    LOGI("[WHISPER-CFG] audio supplied: %d samples = %.2f s (vs 30s window = 480000 samples)",
-         (int)audio.size(), audio_sec);
+    LOGI("[WHISPER-CFG] n_threads=%d  single_segment=%d  no_context=%d  gpu=%d",
+         (int)params.n_threads, (int)params.single_segment,
+         (int)params.no_context, (int)g_use_gpu.load());
     whisper_print_timings(g_ctx);
 
     // ── Collect text segments ──────────────────────────────────────

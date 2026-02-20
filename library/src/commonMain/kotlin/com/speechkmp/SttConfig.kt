@@ -28,5 +28,19 @@ data class SttConfig(
     /**
      * Enable voice activity detection to skip silence.
      */
-    val useVad: Boolean = true
+    val useVad: Boolean = true,
+
+    /**
+     * Force output into a single segment, skipping subtitle-style timestamp
+     * boundary detection. Set to true for interactive voice commands.
+     * Set to false if you need timestamped segments (e.g. podcast transcription).
+     */
+    val singleSegment: Boolean = true,
+
+    /**
+     * Do not use the previous transcription as a prompt for the decoder.
+     * Set to true for isolated voice commands (each recording is independent).
+     * Set to false for continuous transcription of a long audio stream.
+     */
+    val noContext: Boolean = true
 )
