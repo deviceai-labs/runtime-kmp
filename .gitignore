@@ -44,3 +44,4 @@ cmake-build-*/
 # Reference/Architecture docs (internal)
 ARCHITECTURE.md
 docs/
+CustomImpl.md

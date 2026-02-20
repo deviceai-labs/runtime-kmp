@@ -23,7 +23,9 @@ actual object SpeechBridge {
             config.translateToEnglish,
             config.maxThreads,
             config.useGpu,
-            config.useVad
+            config.useVad,
+            config.singleSegment,
+            config.noContext
         )
 
     actual fun transcribe(audioPath: String): String =
@@ -104,7 +106,9 @@ actual object SpeechBridge {
         translate: Boolean,
         maxThreads: Int,
         useGpu: Boolean,
-        useVad: Boolean
+        useVad: Boolean,
+        singleSegment: Boolean,
+        noContext: Boolean
     ): Boolean
 
     private external fun nativeTranscribe(audioPath: String): String

@@ -19,7 +19,9 @@ Java_com_speechkmp_SpeechBridge_nativeInitStt(
     jboolean translate,
     jint maxThreads,
     jboolean useGpu,
-    jboolean useVad);
+    jboolean useVad,
+    jboolean singleSegment,
+    jboolean noContext);
 
 JNIEXPORT jstring JNICALL
 Java_com_speechkmp_SpeechBridge_nativeTranscribe(
@@ -59,6 +61,7 @@ Java_com_speechkmp_SpeechBridge_nativeInitTts(
     JNIEnv *env, jobject thiz,
     jstring modelPath,
     jstring configPath,
+    jstring espeakDataPath,
     jint speakerId,
     jfloat speechRate,
     jint sampleRate,
