@@ -312,6 +312,17 @@ extensions.configure<LibraryExtension> {
         }
     }
 
+    defaultConfig {
+        externalNativeBuild {
+            cmake {
+                // Always build native code in Release mode regardless of the Android variant.
+                // Without this, AGP passes -DCMAKE_BUILD_TYPE=Debug for assembleDebug, which
+                // compiles whisper.cpp / ggml with -O0 — making inference 10-20x slower.
+                arguments("-DCMAKE_BUILD_TYPE=Release")
+            }
+        }
+    }
+
     publishing {
         singleVariant("release") {
             withSourcesJar()

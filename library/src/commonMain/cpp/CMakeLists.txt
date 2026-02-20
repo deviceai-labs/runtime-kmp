@@ -12,11 +12,11 @@ option(SPEECHKMP_ENABLE_TTS "Enable Text-to-Speech (requires ONNX Runtime)" OFF)
 #                        PATHS
 # ═══════════════════════════════════════════════════════════════
 
-set(WHISPER_DIR "${CMAKE_SOURCE_DIR}/../../../../../whisper.cpp")
-set(PIPER_DIR "${CMAKE_SOURCE_DIR}/../../../../../piper")
-set(PIPER_PHONEMIZE_DIR "${CMAKE_SOURCE_DIR}/../../../../../piper-phonemize")
-set(ONNX_DIR "${CMAKE_SOURCE_DIR}/../../../../../onnxruntime")
-set(ESPEAK_DIR "${CMAKE_SOURCE_DIR}/../../../../../espeak-ng")
+set(WHISPER_DIR "${CMAKE_SOURCE_DIR}/../../../../whisper.cpp")
+set(PIPER_DIR "${CMAKE_SOURCE_DIR}/../../../../piper")
+set(PIPER_PHONEMIZE_DIR "${CMAKE_SOURCE_DIR}/../../../../piper-phonemize")
+set(ONNX_DIR "${CMAKE_SOURCE_DIR}/../../../../onnxruntime")
+set(ESPEAK_DIR "${CMAKE_SOURCE_DIR}/../../../../espeak-ng")
 
 # ═══════════════════════════════════════════════════════════════
 #                      WHISPER.CPP (STT)

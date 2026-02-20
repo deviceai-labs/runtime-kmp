@@ -14,6 +14,13 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
+#include <chrono>
+
+// Convenience: milliseconds since an arbitrary epoch (for latency spans)
+static inline long now_ms() {
+    using namespace std::chrono;
+    return (long)duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
 
 // ═══════════════════════════════════════════════════════════════
 //                     PLATFORM-SPECIFIC LOGGING
@@ -374,6 +381,8 @@ Java_com_speechkmp_SpeechBridge_nativeTranscribeAudio(
 
     g_cancel_requested = false;
 
+    long t_jni_start = now_ms();
+
     // Get samples
     jsize len = env->GetArrayLength(samples);
     jfloat *data = env->GetFloatArrayElements(samples, nullptr);
@@ -382,13 +391,35 @@ Java_com_speechkmp_SpeechBridge_nativeTranscribeAudio(
     std::vector<float> audio(data, data + len);
     env->ReleaseFloatArrayElements(samples, data, 0);
 
-    // Run inference
+    long t_jni_copy_done = now_ms();
+    float audio_sec = (float)audio.size() / WHISPER_SAMPLE_RATE;
+    LOGI("[LATENCY] JNI array copy:   %ld ms  (%d samples = %.2f s of audio)",
+         t_jni_copy_done - t_jni_start, (int)audio.size(), audio_sec);
+
+    // ── Whisper inference ──────────────────────────────────────────
+    long t_infer_start = now_ms();
+
     if (whisper_full(g_ctx, g_params, audio.data(), audio.size()) != 0) {
         LOGE("Whisper inference failed");
         return env->NewStringUTF("");
     }
 
-    // Collect results
+    long t_infer_done = now_ms();
+    LOGI("[LATENCY] whisper_full():   %ld ms  (RTF = %.2fx)",
+         t_infer_done - t_infer_start,
+         (float)(t_infer_done - t_infer_start) / (audio_sec * 1000.0f));
+
+    // whisper_print_timings() goes to stderr — visible on Desktop/iOS but not Android logcat.
+    // Log the config that directly drives performance so we can diagnose from logcat.
+    LOGI("[WHISPER-CFG] n_threads=%d  audio_ctx=%d (0=full 30s window)  gpu=%d",
+         (int)g_params.n_threads, (int)g_params.audio_ctx, (int)g_use_gpu.load());
+    LOGI("[WHISPER-CFG] audio supplied: %d samples = %.2f s (vs 30s window = 480000 samples)",
+         (int)audio.size(), audio_sec);
+    whisper_print_timings(g_ctx);
+
+    // ── Collect text segments ──────────────────────────────────────
+    long t_collect_start = now_ms();
+
     std::string result;
     int n_segments = whisper_full_n_segments(g_ctx);
     for (int i = 0; i < n_segments; i++) {
@@ -397,6 +428,12 @@ Java_com_speechkmp_SpeechBridge_nativeTranscribeAudio(
             result += text;
         }
     }
+
+    long t_collect_done = now_ms();
+    LOGI("[LATENCY] collect segments: %ld ms  (%d segments)",
+         t_collect_done - t_collect_start, n_segments);
+    LOGI("[LATENCY] ── TOTAL C++ ──   %ld ms",
+         t_collect_done - t_jni_start);
 
     return env->NewStringUTF(result.c_str());
 }
