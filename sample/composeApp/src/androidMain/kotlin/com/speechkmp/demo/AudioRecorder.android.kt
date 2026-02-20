@@ -1,0 +1,69 @@
+package com.speechkmp.demo
+
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
+
+@Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
+actual class AudioRecorder actual constructor() {
+
+    private val sampleRate = 16000
+    private var audioRecord: AudioRecord? = null
+    private val collectedSamples = mutableListOf<Short>()
+    private var recordingThread: Thread? = null
+    @Volatile private var isRecording = false
+
+    actual fun startRecording() {
+        if (isRecording) return
+
+        val minBuffer = AudioRecord.getMinBufferSize(
+            sampleRate,
+            AudioFormat.CHANNEL_IN_MONO,
+            AudioFormat.ENCODING_PCM_16BIT
+        )
+        val bufferSize = if (minBuffer < 0) sampleRate * 2 else minBuffer * 2
+
+        val record = try {
+            AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                sampleRate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            )
+        } catch (e: SecurityException) {
+            return // Permission not granted — caller should show error
+        }
+
+        collectedSamples.clear()
+        audioRecord = record
+        isRecording = true
+        record.startRecording()
+
+        recordingThread = Thread {
+            val buffer = ShortArray(bufferSize / 2)
+            while (isRecording) {
+                val read = record.read(buffer, 0, buffer.size)
+                if (read > 0) {
+                    synchronized(collectedSamples) {
+                        for (i in 0 until read) collectedSamples.add(buffer[i])
+                    }
+                }
+            }
+        }.also { it.start() }
+    }
+
+    actual fun stopRecording(): FloatArray {
+        if (!isRecording) return FloatArray(0)
+        isRecording = false
+        recordingThread?.join()
+        recordingThread = null
+        audioRecord?.stop()
+        audioRecord?.release()
+        audioRecord = null
+
+        return synchronized(collectedSamples) {
+            FloatArray(collectedSamples.size) { i -> collectedSamples[i] / 32768f }
+        }
+    }
+}
