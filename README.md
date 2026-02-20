@@ -1,156 +1,213 @@
-# deviceai-runtime-kmp
+# DeviceAI Runtime · KMP
 
-Kotlin Multiplatform library for on-device Speech-to-Text (STT) and Text-to-Speech (TTS).
+**On-device AI runtime for mobile. Run speech recognition and synthesis locally — no cloud, no latency, no privacy risk.**
+
+[![Build](https://github.com/NikhilBhutani/deviceai-runtime-kmp/actions/workflows/ci.yml/badge.svg)](https://github.com/NikhilBhutani/deviceai-runtime-kmp/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-TBD-lightgrey)](#)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blueviolet?logo=kotlin)](https://kotlinlang.org)
+[![KMP](https://img.shields.io/badge/Kotlin_Multiplatform-Android%20%7C%20iOS%20%7C%20Desktop-blue)](https://www.jetbrains.com/kotlin-multiplatform/)
+
+---
+
+## Why DeviceAI Runtime?
+
+Mobile AI is broken for most teams:
+
+- **Fragmented SDKs** — separate wrappers for Android, iOS, desktop
+- **Cloud dependency** — latency, cost, and user data leaving the device
+- **Model loading is messy** — threading, memory pressure, cold-start problems
+- **Every team reinvents inference wrappers** — from scratch, badly
+
+DeviceAI Runtime solves this with a single Kotlin Multiplatform library: one API, all platforms, fully local.
+
+---
+
+## Benchmarks
+
+Real numbers on real hardware. No marketing RTF.
+
+| Device | Chip | Model | Audio | Inference | RTF |
+|--------|------|-------|-------|-----------|-----|
+| Redmi Note 9 Pro | Snapdragon 720G | whisper-tiny | 5.4s | 746ms | **0.14x** |
+
+> RTF < 1.0 = faster than real-time. 0.14x = ~7× faster than real-time on a mid-range Android phone.
+
+---
+
+## Architecture
+
+```
+Your App
+    │
+    ▼
+DeviceAI Runtime  (ai.onmobi)
+    │   SpeechBridge — unified Kotlin API
+    │   ModelRegistry — auto-download from HuggingFace
+    │
+    ├── Android / Desktop
+    │       JNI  →  libspeech_jni.so
+    │
+    └── iOS
+            C Interop  →  speech_ios framework
+                │
+                ▼
+        Native Inference
+        ├── whisper.cpp  (STT)
+        └── piper + ONNX  (TTS)
+```
+
+---
 
 ## Features
 
-- **Speech-to-Text (STT):** Convert audio to text using OpenAI's Whisper model via [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
-- **Text-to-Speech (TTS):** Generate natural speech from text using [Piper](https://github.com/rhasspy/piper) neural TTS
-- **Privacy-first:** All processing happens on-device, no internet required
-- **Cross-platform:** Android, iOS, Desktop (macOS, Linux, Windows)
-- **Lightweight:** Minimal dependencies, optimized for mobile
+| Feature | Status |
+|---------|--------|
+| Speech-to-Text (Whisper) | ✅ Android, iOS, Desktop |
+| Text-to-Speech (Piper) | ✅ Android, iOS, Desktop |
+| Auto model download (HuggingFace) | ✅ |
+| GPU acceleration (Metal / Vulkan) | ✅ |
+| Streaming transcription | ✅ |
+| Voice activity detection | ✅ |
+| Offline — zero cloud dependency | ✅ |
+| LLM inference | 🗓 Planned |
 
-## Supported Platforms
+---
 
-| Platform | Status |
-|----------|--------|
-| Android | ✅ |
-| iOS | ✅ |
-| macOS | ✅ |
-| Linux | 🚧 |
-| Windows | 🚧 |
+## Quick Start
 
-## Installation
+### 1. Add the dependency
 
-Add the dependency to your `build.gradle.kts`:
+> GitHub Packages setup coming in v0.2. For now, clone and use as a local module.
 
 ```kotlin
-dependencies {
-    implementation("com.speechkmp:library:0.1.0")
-}
+// settings.gradle.kts
+include(":runtime-speech")
+project(":runtime-speech").projectDir = File("path/to/deviceai-runtime-kmp/runtime-speech")
+
+// build.gradle.kts
+implementation(project(":runtime-speech"))
 ```
 
-## Usage
-
-### Speech-to-Text (STT)
+### 2. Speech-to-Text
 
 ```kotlin
-// Initialize with Whisper model
-val modelPath = SpeechBridge.getModelPath("whisper-tiny.bin")
-SpeechBridge.initStt(modelPath, SttConfig(language = "en"))
+import ai.onmobi.SpeechBridge
+import ai.onmobi.SttConfig
+import ai.onmobi.models.ModelRegistry
 
-// Transcribe audio file
+// Download model on first run (whisper-tiny = 75MB)
+val model = ModelRegistry.getOrDownload("ggml-tiny.en.bin")
+
+// Initialize
+SpeechBridge.initStt(model.path, SttConfig(language = "en"))
+
+// Transcribe audio samples (FloatArray, 16kHz mono)
+val text = SpeechBridge.transcribeAudio(samples)
+
+// Or transcribe a file
 val text = SpeechBridge.transcribe("/path/to/audio.wav")
-println(text)
-
-// Transcribe with detailed results
-val result = SpeechBridge.transcribeDetailed("/path/to/audio.wav")
-println("Text: ${result.text}")
-result.segments.forEach { segment ->
-    println("[${segment.startMs}ms - ${segment.endMs}ms] ${segment.text}")
-}
-
-// Streaming transcription
-SpeechBridge.transcribeStream(audioSamples, object : SttStream {
-    override fun onPartialResult(text: String) {
-        println("Partial: $text")
-    }
-    override fun onFinalResult(result: TranscriptionResult) {
-        println("Final: ${result.text}")
-    }
-    override fun onError(message: String) {
-        println("Error: $message")
-    }
-})
 
 // Cleanup
 SpeechBridge.shutdownStt()
 ```
 
-### Text-to-Speech (TTS)
+### 3. Text-to-Speech
 
 ```kotlin
-// Initialize with Piper voice model
+import ai.onmobi.SpeechBridge
+import ai.onmobi.TtsConfig
+
 SpeechBridge.initTts(
     modelPath = "/path/to/voice.onnx",
     configPath = "/path/to/voice.json",
     config = TtsConfig(speechRate = 1.0f)
 )
 
-// Synthesize to audio samples
-val samples = SpeechBridge.synthesize("Hello, world!")
+val samples: ShortArray = SpeechBridge.synthesize("Hello, world!")
 
-// Synthesize to file
-SpeechBridge.synthesizeToFile("Hello, world!", "/path/to/output.wav")
-
-// Streaming synthesis
-SpeechBridge.synthesizeStream("Hello, world!", object : TtsStream {
-    override fun onAudioChunk(samples: ShortArray) {
-        // Play audio chunk
-    }
-    override fun onComplete() {
-        println("Synthesis complete")
-    }
-    override fun onError(message: String) {
-        println("Error: $message")
-    }
-})
-
-// Cleanup
 SpeechBridge.shutdownTts()
 ```
 
+### Android — initialize storage before models
+
+```kotlin
+// In Application.onCreate() or MainActivity
+PlatformStorage.initialize(context)
+```
+
+---
+
 ## Models
 
-### Whisper Models (STT)
+### Whisper (STT) — via [ggerganov/whisper.cpp](https://github.com/ggerganov/whisper.cpp)
 
-Download from [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp):
+| Model | Size | Best for |
+|-------|------|----------|
+| tiny.en | 75 MB | Fast, English-only |
+| base | 142 MB | Balanced |
+| small | 466 MB | High accuracy |
 
-| Model | Size | Speed | Accuracy |
-|-------|------|-------|----------|
-| tiny | 75 MB | Fastest | Lower |
-| base | 142 MB | Fast | Good |
-| small | 466 MB | Medium | Better |
-| medium | 1.5 GB | Slow | High |
-
-### Piper Voices (TTS)
-
-Download from [Hugging Face](https://huggingface.co/rhasspy/piper-voices):
+### Piper (TTS) — via [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices)
 
 | Voice | Size | Language |
 |-------|------|----------|
-| en_US-lessac-medium | 60 MB | English US |
-| en_GB-alba-medium | 55 MB | English UK |
+| en_US-lessac-medium | 60 MB | English (US) |
+| en_GB-alba-medium | 55 MB | English (UK) |
 | de_DE-thorsten-medium | 65 MB | German |
+
+Models are downloaded automatically via `ModelRegistry` on first use.
+
+---
+
+## Platform Support
+
+| Platform | STT | TTS | Sample App |
+|----------|-----|-----|------------|
+| Android | ✅ | ✅ | ✅ |
+| iOS | ✅ | ✅ | ✅ |
+| macOS (Desktop) | ✅ | ✅ | ✅ |
+| Linux | 🚧 | 🚧 | — |
+| Windows | 🚧 | 🚧 | — |
+
+---
 
 ## Building from Source
 
-### Prerequisites
+**Prerequisites:** CMake 3.22+, Android NDK r26+, Xcode 15+ (for iOS), Kotlin 2.0+
 
-- CMake 3.22+
-- Android NDK r26+ (for Android)
-- Xcode 15+ (for iOS/macOS)
-- Kotlin 2.0+
-
-### Setup
-
-1. Clone the repository with submodules:
 ```bash
 git clone --recursive https://github.com/NikhilBhutani/deviceai-runtime-kmp.git
 cd deviceai-runtime-kmp
+
+# Compile check
+./gradlew :runtime-speech:compileKotlinJvm
+./gradlew :runtime-speech:compileDebugKotlinAndroid
+
+# Run the desktop sample
+./gradlew :samples:composeApp:run
 ```
 
-2. Add the native library submodules:
-```bash
-git submodule add https://github.com/ggerganov/whisper.cpp.git whisper.cpp
-git submodule add https://github.com/rhasspy/piper.git piper
-```
+---
 
-3. Build:
-```bash
-./gradlew build
-```
+## Roadmap
 
-## License
+- [x] STT via whisper.cpp
+- [x] TTS via Piper + ONNX
+- [x] Model auto-download from HuggingFace
+- [x] KMP: Android, iOS, Desktop
+- [ ] Maven Central / GitHub Packages release (`ai.onmobi:runtime-speech`)
+- [ ] LLM inference module (`runtime-llm`)
+- [ ] Cloud fallback layer
+- [ ] Streaming TTS
 
-MIT License
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and PRs are welcome.
+
+---
+
+## Sample App
+
+The `samples/composeApp` directory contains a working Compose Multiplatform demo — downloads whisper-tiny on first launch, records audio, shows transcription with live latency.
