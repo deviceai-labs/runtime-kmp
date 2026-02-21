@@ -7,6 +7,6 @@ plugins {
 }
 
 allprojects {
-    group = "ai.onmobi"
+    group = "io.github.nikhilbhutani"
     version = System.getenv("RELEASE_VERSION") ?: "0.1.0-SNAPSHOT"
 }

@@ -10,7 +10,7 @@ plugins {
     id("signing")
 }
 
-group = "ai.onmobi"
+group = "io.github.nikhilbhutani"
 version = (System.getenv("RELEASE_VERSION") ?: "0.1.0-SNAPSHOT")
 
 // Minimum iOS version
@@ -38,7 +38,7 @@ kotlin {
             baseName = "deviceai-runtime-kmp"
             isStatic = true
             linkerOpts("-Wl,-no_implicit_dylibs")
-            freeCompilerArgs += listOf("-Xbinary=bundleId=ai.onmobi.library")
+            freeCompilerArgs += listOf("-Xbinary=bundleId=io.github.nikhilbhutani.library")
             freeCompilerArgs += "-Xoverride-konan-properties=osVersionMin.ios=$minIos"
         }
     }
@@ -171,7 +171,7 @@ kotlin {
         arch.compilations.getByName("main").cinterops {
             create("speech") {
                 defFile("src/iosMain/c_interop/speech_ios.def")
-                packageName("ai.onmobi.native")
+                packageName("io.github.nikhilbhutani.native")
                 compilerOpts("-I${projectDir}/src/iosMain/c_interop/include")
                 extraOpts("-libraryPath", libPath)
 
@@ -288,7 +288,7 @@ tasks.named("build").configure {
 
 // Android configuration
 extensions.configure<LibraryExtension> {
-    namespace = "ai.onmobi"
+    namespace = "io.github.nikhilbhutani"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
@@ -350,7 +350,7 @@ publishing {
         }
     }
     publications.withType<MavenPublication>().configureEach {
-        groupId = "ai.onmobi"
+        groupId = "io.github.nikhilbhutani"
         artifactId = artifactId.replace("runtime-speech", "runtime-speech")
         pom {
             name.set("DeviceAI Runtime — Speech")
@@ -377,12 +377,15 @@ publishing {
     }
 }
 
-signing {
-    useInMemoryPgpKeys(
-        (findProperty("signingInMemoryKey") as String?) ?: System.getenv("SIGNING_KEY"),
-        (findProperty("signingInMemoryKeyPassword") as String?) ?: System.getenv("SIGNING_PASSWORD")
-    )
-    sign(publishing.publications)
+val signingKey = (findProperty("signingInMemoryKey") as String?) ?: System.getenv("SIGNING_KEY")
+if (!signingKey.isNullOrEmpty()) {
+    signing {
+        useInMemoryPgpKeys(
+            signingKey,
+            (findProperty("signingInMemoryKeyPassword") as String?) ?: System.getenv("SIGNING_PASSWORD")
+        )
+        sign(publishing.publications)
+    }
 }
 
 afterEvaluate {

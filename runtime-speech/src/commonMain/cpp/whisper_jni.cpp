@@ -168,7 +168,7 @@ struct StreamCallbackData {
 // ═══════════════════════════════════════════════════════════════
 
 JNIEXPORT jboolean JNICALL
-Java_ai_onmobi_SpeechBridge_nativeInitStt(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeInitStt(
     JNIEnv *env, jobject thiz,
     jstring modelPath,
     jstring language,
@@ -229,7 +229,7 @@ Java_ai_onmobi_SpeechBridge_nativeInitStt(
 }
 
 JNIEXPORT jstring JNICALL
-Java_ai_onmobi_SpeechBridge_nativeTranscribe(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeTranscribe(
     JNIEnv *env, jobject thiz,
     jstring audioPath) {
 
@@ -280,7 +280,7 @@ Java_ai_onmobi_SpeechBridge_nativeTranscribe(
 }
 
 JNIEXPORT jobject JNICALL
-Java_ai_onmobi_SpeechBridge_nativeTranscribeDetailed(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeTranscribeDetailed(
     JNIEnv *env, jobject thiz,
     jstring audioPath) {
 
@@ -376,7 +376,7 @@ Java_ai_onmobi_SpeechBridge_nativeTranscribeDetailed(
 }
 
 JNIEXPORT jstring JNICALL
-Java_ai_onmobi_SpeechBridge_nativeTranscribeAudio(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeTranscribeAudio(
     JNIEnv *env, jobject thiz,
     jfloatArray samples) {
 
@@ -455,7 +455,7 @@ Java_ai_onmobi_SpeechBridge_nativeTranscribeAudio(
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeTranscribeStream(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeTranscribeStream(
     JNIEnv *env, jobject thiz,
     jfloatArray samples,
     jobject callback) {
@@ -551,7 +551,7 @@ Java_ai_onmobi_SpeechBridge_nativeTranscribeStream(
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeCancelStt(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeCancelStt(
     JNIEnv *env, jobject thiz) {
 
     LOGI("Cancel STT requested");
@@ -559,7 +559,7 @@ Java_ai_onmobi_SpeechBridge_nativeCancelStt(
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeShutdownStt(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeShutdownStt(
     JNIEnv *env, jobject thiz) {
 
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -578,7 +578,7 @@ Java_ai_onmobi_SpeechBridge_nativeShutdownStt(
 #ifdef SPEECHKMP_STT_ONLY
 
 JNIEXPORT jboolean JNICALL
-Java_ai_onmobi_SpeechBridge_nativeInitTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeInitTts(
     JNIEnv *env, jobject thiz,
     jstring modelPath,
     jstring configPath,
@@ -592,7 +592,7 @@ Java_ai_onmobi_SpeechBridge_nativeInitTts(
 }
 
 JNIEXPORT jshortArray JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesize(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesize(
     JNIEnv *env, jobject thiz,
     jstring text) {
     LOGE("TTS not available - built with STT only");
@@ -600,7 +600,7 @@ Java_ai_onmobi_SpeechBridge_nativeSynthesize(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesizeToFile(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesizeToFile(
     JNIEnv *env, jobject thiz,
     jstring text,
     jstring outputPath) {
@@ -609,7 +609,7 @@ Java_ai_onmobi_SpeechBridge_nativeSynthesizeToFile(
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesizeStream(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesizeStream(
     JNIEnv *env, jobject thiz,
     jstring text,
     jobject callback) {
@@ -619,13 +619,13 @@ Java_ai_onmobi_SpeechBridge_nativeSynthesizeStream(
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeCancelTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeCancelTts(
     JNIEnv *env, jobject thiz) {
     // No-op when TTS disabled
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeShutdownTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeShutdownTts(
     JNIEnv *env, jobject thiz) {
     // No-op when TTS disabled
 }

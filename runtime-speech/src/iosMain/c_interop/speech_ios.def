@@ -6,4 +6,4 @@ compilerOpts = -I$PROJECT_DIR/../whisper.cpp/include \
                -I$PROJECT_DIR/src/iosMain/c_interop/include
 staticLibraries = libspeech_merged.a
 linkerOpts = -framework Accelerate -framework Metal -framework CoreML -lc++ -ObjC
-package = ai.onmobi.native
+package = io.github.nikhilbhutani.native

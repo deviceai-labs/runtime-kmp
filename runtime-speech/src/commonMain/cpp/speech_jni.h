@@ -12,7 +12,7 @@ extern "C" {
 // ═══════════════════════════════════════════════════════════════
 
 JNIEXPORT jboolean JNICALL
-Java_ai_onmobi_SpeechBridge_nativeInitStt(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeInitStt(
     JNIEnv *env, jobject thiz,
     jstring modelPath,
     jstring language,
@@ -24,32 +24,32 @@ Java_ai_onmobi_SpeechBridge_nativeInitStt(
     jboolean noContext);
 
 JNIEXPORT jstring JNICALL
-Java_ai_onmobi_SpeechBridge_nativeTranscribe(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeTranscribe(
     JNIEnv *env, jobject thiz,
     jstring audioPath);
 
 JNIEXPORT jobject JNICALL
-Java_ai_onmobi_SpeechBridge_nativeTranscribeDetailed(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeTranscribeDetailed(
     JNIEnv *env, jobject thiz,
     jstring audioPath);
 
 JNIEXPORT jstring JNICALL
-Java_ai_onmobi_SpeechBridge_nativeTranscribeAudio(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeTranscribeAudio(
     JNIEnv *env, jobject thiz,
     jfloatArray samples);
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeTranscribeStream(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeTranscribeStream(
     JNIEnv *env, jobject thiz,
     jfloatArray samples,
     jobject callback);
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeCancelStt(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeCancelStt(
     JNIEnv *env, jobject thiz);
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeShutdownStt(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeShutdownStt(
     JNIEnv *env, jobject thiz);
 
 // ═══════════════════════════════════════════════════════════════
@@ -57,7 +57,7 @@ Java_ai_onmobi_SpeechBridge_nativeShutdownStt(
 // ═══════════════════════════════════════════════════════════════
 
 JNIEXPORT jboolean JNICALL
-Java_ai_onmobi_SpeechBridge_nativeInitTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeInitTts(
     JNIEnv *env, jobject thiz,
     jstring modelPath,
     jstring configPath,
@@ -68,28 +68,28 @@ Java_ai_onmobi_SpeechBridge_nativeInitTts(
     jfloat sentenceSilence);
 
 JNIEXPORT jshortArray JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesize(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesize(
     JNIEnv *env, jobject thiz,
     jstring text);
 
 JNIEXPORT jboolean JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesizeToFile(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesizeToFile(
     JNIEnv *env, jobject thiz,
     jstring text,
     jstring outputPath);
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesizeStream(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesizeStream(
     JNIEnv *env, jobject thiz,
     jstring text,
     jobject callback);
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeCancelTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeCancelTts(
     JNIEnv *env, jobject thiz);
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeShutdownTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeShutdownTts(
     JNIEnv *env, jobject thiz);
 
 #ifdef __cplusplus

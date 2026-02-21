@@ -107,7 +107,7 @@ static bool write_wav_file(const std::string &path, const std::vector<int16_t> &
 // ═══════════════════════════════════════════════════════════════
 
 JNIEXPORT jboolean JNICALL
-Java_ai_onmobi_SpeechBridge_nativeInitTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeInitTts(
     JNIEnv *env, jobject thiz,
     jstring modelPath,
     jstring configPath,
@@ -173,7 +173,7 @@ Java_ai_onmobi_SpeechBridge_nativeInitTts(
 }
 
 JNIEXPORT jshortArray JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesize(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesize(
     JNIEnv *env, jobject thiz,
     jstring text) {
 
@@ -217,7 +217,7 @@ Java_ai_onmobi_SpeechBridge_nativeSynthesize(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesizeToFile(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesizeToFile(
     JNIEnv *env, jobject thiz,
     jstring text,
     jstring outputPath) {
@@ -264,7 +264,7 @@ Java_ai_onmobi_SpeechBridge_nativeSynthesizeToFile(
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeSynthesizeStream(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeSynthesizeStream(
     JNIEnv *env, jobject thiz,
     jstring text,
     jobject callback) {
@@ -329,7 +329,7 @@ Java_ai_onmobi_SpeechBridge_nativeSynthesizeStream(
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeCancelTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeCancelTts(
     JNIEnv *env, jobject thiz) {
 
     LOGI("Cancel TTS requested");
@@ -337,7 +337,7 @@ Java_ai_onmobi_SpeechBridge_nativeCancelTts(
 }
 
 JNIEXPORT void JNICALL
-Java_ai_onmobi_SpeechBridge_nativeShutdownTts(
+Java_io_github_nikhilbhutani_SpeechBridge_nativeShutdownTts(
     JNIEnv *env, jobject thiz) {
 
     std::lock_guard<std::mutex> lock(g_mutex);

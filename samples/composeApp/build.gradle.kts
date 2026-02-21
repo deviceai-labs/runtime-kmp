@@ -54,11 +54,11 @@ kotlin {
 }
 
 android {
-    namespace = "ai.onmobi.demo"
+    namespace = "io.github.nikhilbhutani.demo"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "ai.onmobi.demo"
+        applicationId = "io.github.nikhilbhutani.demo"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
@@ -85,7 +85,7 @@ android {
 
 compose.desktop {
     application {
-        mainClass = "ai.onmobi.demo.MainKt"
+        mainClass = "io.github.nikhilbhutani.demo.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg)
