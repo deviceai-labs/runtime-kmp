@@ -3,7 +3,7 @@
 **On-device AI runtime for mobile. Run speech recognition and synthesis locally — no cloud, no latency, no privacy risk.**
 
 [![Build](https://github.com/NikhilBhutani/deviceai-runtime-kmp/actions/workflows/ci.yml/badge.svg)](https://github.com/NikhilBhutani/deviceai-runtime-kmp/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-TBD-lightgrey)](#)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blueviolet?logo=kotlin)](https://kotlinlang.org)
 [![KMP](https://img.shields.io/badge/Kotlin_Multiplatform-Android%20%7C%20iOS%20%7C%20Desktop-blue)](https://www.jetbrains.com/kotlin-multiplatform/)
 

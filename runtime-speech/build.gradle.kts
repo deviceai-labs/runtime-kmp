@@ -358,8 +358,8 @@ publishing {
             url.set("https://github.com/NikhilBhutani/deviceai-runtime-kmp")
             licenses {
                 license {
-                    name.set("MIT")
-                    url.set("https://opensource.org/licenses/MIT")
+                    name.set("Apache-2.0")
+                    url.set("https://www.apache.org/licenses/LICENSE-2.0")
                 }
             }
             developers {
