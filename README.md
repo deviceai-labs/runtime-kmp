@@ -4,7 +4,8 @@
 
 [![Build](https://github.com/NikhilBhutani/deviceai-runtime-kmp/actions/workflows/ci.yml/badge.svg)](https://github.com/NikhilBhutani/deviceai-runtime-kmp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blueviolet?logo=kotlin)](https://kotlinlang.org)
+[![Maven Central](https://img.shields.io/maven-central/v/com.nikhilbhutani/runtime-speech)](https://central.sonatype.com/artifact/com.nikhilbhutani/runtime-speech)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2-blueviolet?logo=kotlin)](https://kotlinlang.org)
 [![KMP](https://img.shields.io/badge/Kotlin_Multiplatform-Android%20%7C%20iOS%20%7C%20Desktop-blue)](https://www.jetbrains.com/kotlin-multiplatform/)
 
 ---
@@ -77,25 +78,14 @@ DeviceAI Runtime  (com.nikhilbhutani)
 
 ### 1. Add the dependency
 
-**Via GitHub Packages** (after a release is published):
+**Via Maven Central:**
 
 ```kotlin
-// settings.gradle.kts
-dependencyResolutionManagement {
-    repositories {
-        maven {
-            url = uri("https://maven.pkg.github.com/NikhilBhutani/deviceai-runtime-kmp")
-            credentials {
-                username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GITHUB_ACTOR")
-                password = providers.gradleProperty("gpr.key").orNull ?: System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
-}
-
 // build.gradle.kts
-implementation("com.nikhilbhutani:runtime-speech:0.1.0")
+implementation("com.nikhilbhutani:runtime-speech:0.1.1")
 ```
+
+No repository configuration needed — Maven Central is included by default in Android and KMP projects.
 
 **Or use as a local module** (clone and include directly):
 
@@ -215,7 +205,7 @@ cd deviceai-runtime-kmp
 - [x] TTS via Piper + ONNX
 - [x] Model auto-download from HuggingFace
 - [x] KMP: Android, iOS, Desktop
-- [ ] Maven Central / GitHub Packages release (`com.nikhilbhutani:runtime-speech`)
+- [x] Maven Central release (`com.nikhilbhutani:runtime-speech:0.1.1`)
 - [ ] LLM inference module (`runtime-llm`)
 - [ ] Cloud fallback layer
 - [ ] Streaming TTS
