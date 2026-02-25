@@ -8,12 +8,12 @@ on:
       version:
         description: 'Release version (e.g. 0.1.1)'
         required: true
-        default: '0.1.1'
+        default: '0.1.0'
 
 jobs:
   publish:
     name: Publish to Maven Central
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     permissions:
       contents: read
