@@ -201,14 +201,32 @@ cd deviceai-runtime-kmp
 
 ## Roadmap
 
+DeviceAI Runtime is modular — each AI modality ships as an independent module, independently versioned.
+
+### `runtime-speech` — Speech ✅
 - [x] STT via whisper.cpp
 - [x] TTS via Piper + ONNX
 - [x] Model auto-download from HuggingFace
 - [x] KMP: Android, iOS, Desktop
 - [x] Maven Central release (`com.nikhilbhutani:runtime-speech:0.1.1`)
-- [ ] LLM inference module (`runtime-llm`)
-- [ ] Cloud fallback layer
 - [ ] Streaming TTS
+- [ ] Voice activity detection (VAD)
+
+### `runtime-llm` — Large Language Models 🗓
+- [ ] Local LLM inference (llama.cpp or similar)
+- [ ] KMP API matching the speech module pattern
+- [ ] Model registry integration
+
+### `runtime-vlm` — Vision-Language Models 🗓
+- [ ] Image + text inference on-device
+- [ ] Camera feed support
+
+### `runtime-multimodal` — Combined Modalities 🗓
+- [ ] Compose across speech, vision, and language in one pipeline
+
+### Platform & Infrastructure 🗓
+- [ ] Cloud fallback layer (hybrid: device + edge + cloud)
+- [ ] Windows + Linux support
 
 ---
 
