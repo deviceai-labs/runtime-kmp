@@ -82,7 +82,7 @@ DeviceAI Runtime  (dev.deviceai)
 
 ```kotlin
 // build.gradle.kts
-implementation("dev.deviceai:runtime-speech:0.1.1")
+implementation("dev.deviceai:runtime-speech:0.1.0")
 ```
 
 No repository configuration needed — Maven Central is included by default in Android and KMP projects.
@@ -208,7 +208,7 @@ DeviceAI Runtime is modular — each AI modality ships as an independent module,
 - [x] TTS via Piper + ONNX
 - [x] Model auto-download from HuggingFace
 - [x] KMP: Android, iOS, Desktop
-- [x] Maven Central release (`dev.deviceai:runtime-speech:0.1.1`)
+- [x] Maven Central release (`dev.deviceai:runtime-speech:0.1.0`)
 - [ ] Streaming TTS
 - [ ] Voice activity detection (VAD)
 
