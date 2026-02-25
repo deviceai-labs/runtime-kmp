@@ -2,7 +2,7 @@
 
 **On-device AI runtime for mobile. Run speech recognition and synthesis locally — no cloud, no latency, no privacy risk.**
 
-[![Build](https://github.com/NikhilBhutani/deviceai-runtime-kmp/actions/workflows/ci.yml/badge.svg)](https://github.com/NikhilBhutani/deviceai-runtime-kmp/actions/workflows/ci.yml)
+[![Build](https://github.com/deviceai-labs/runtime-kmp/actions/workflows/ci.yml/badge.svg)](https://github.com/deviceai-labs/runtime-kmp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Maven Central](https://img.shields.io/maven-central/v/com.nikhilbhutani/runtime-speech)](https://central.sonatype.com/artifact/com.nikhilbhutani/runtime-speech)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2-blueviolet?logo=kotlin)](https://kotlinlang.org)
@@ -186,7 +186,7 @@ Models are downloaded automatically via `ModelRegistry` on first use.
 **Prerequisites:** CMake 3.22+, Android NDK r26+, Xcode 15+ (for iOS), Kotlin 2.0+
 
 ```bash
-git clone --recursive https://github.com/NikhilBhutani/deviceai-runtime-kmp.git
+git clone --recursive https://github.com/deviceai-labs/runtime-kmp.git
 cd deviceai-runtime-kmp
 
 # Compile check
