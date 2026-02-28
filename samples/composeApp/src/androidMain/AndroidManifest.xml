@@ -6,7 +6,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="SpeechKMP Demo"
+        android:label="DeviceAI"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity

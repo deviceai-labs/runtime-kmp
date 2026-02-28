@@ -135,7 +135,7 @@ private fun BrandingSection() {
         Spacer(Modifier.height(28.dp))
 
         Text(
-            text = "SpeechKMP",
+            text = "DeviceAI",
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onBackground
         )

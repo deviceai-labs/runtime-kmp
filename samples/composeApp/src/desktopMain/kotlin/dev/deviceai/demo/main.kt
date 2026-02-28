@@ -8,7 +8,7 @@ import androidx.compose.ui.window.rememberWindowState
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "SpeechKMP Demo",
+        title = "DeviceAI",
         state = rememberWindowState(width = 480.dp, height = 760.dp)
     ) {
         App()
