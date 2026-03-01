@@ -60,7 +60,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun SpeechKMPTheme(
+fun DeviceAITheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
