@@ -12,22 +12,25 @@
 
 ## What's available
 
-| Module | Who it's for | Distribution | Status |
-|--------|-------------|--------------|--------|
-| `kotlin/core` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:core` | ✅ Available |
-| `kotlin/speech` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:speech` | ✅ Available |
-| `kotlin/llm` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:llm` | 🚧 In development |
-| `ios/speech` | Swift (iOS only) | Swift Package Index | 🗓 Planned |
-| `flutter/speech` | Flutter (Android + iOS) | pub.dev `deviceai_speech` | 🗓 Planned |
-| `react-native/speech` | React Native (Android + iOS) | npm `react-native-deviceai-speech` | 🗓 Planned |
+| Module | Language | Distribution | Status |
+|--------|----------|--------------|--------|
+| `kotlin/core` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:core` | ✅ Available |
+| `kotlin/speech` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:speech` | ✅ Available |
+| `kotlin/llm` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:llm` | 🚧 In development |
+| `ios/speech` | Swift | Swift Package Index | 🗓 Planned |
+| `flutter/speech` | Dart | pub.dev `deviceai_speech` | 🗓 Planned |
+| `react-native/speech` | TypeScript | npm `react-native-deviceai-speech` | 🗓 Planned |
 
 **✅ Available** — published and usable today.
 **🚧 In development** — module exists; API and native integration not yet complete.
 **🗓 Planned** — stub exists to signal intent; no implementation yet.
 
-The Kotlin SDK (`kotlin/`) works in both **Kotlin Multiplatform projects and Android-only projects** — it is pure Kotlin with no framework opinion. Lifecycle management, ViewModel wiring, and DI are intentionally left to the app. The SDK exposes `init`, `shutdown`, and `clear` — you integrate them however fits your architecture.
+Each SDK is **independent and native to its platform** — they all call the same C++ engines (whisper.cpp, piper) directly, with no cross-language bridging:
 
-Platform wrappers (`ios/`, `flutter/`, `react-native/`) exist only where there is a language boundary: Swift, Dart, and JavaScript cannot consume Kotlin directly.
+- `kotlin/` — Kotlin API, JNI bridge to C++ on Android/JVM, C interop on iOS (for KMP projects)
+- `ios/` — Swift API, links whisper.cpp/piper directly as a Swift Package binary target
+- `flutter/` — Dart API, calls C++ via `dart:ffi` on Android and iOS
+- `react-native/` — TypeScript API, calls C++ via JSI (New Architecture) on Android and iOS
 
 ---
 
@@ -351,16 +354,18 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a deep-dive on the native layer, CMak
 - [ ] Will publish: `dev.deviceai:llm`
 
 ### `ios/speech` 🗓 Planned
-- [ ] Swift `async`/`await` + Combine wrappers around the KMP XCFramework
-- [ ] For Swift-only iOS teams that want a pure Swift dependency
+- [ ] Native Swift SDK — links whisper.cpp + piper directly, no KMP dependency
+- [ ] `SpeechRecognizer` and `SpeechSynthesizer` with `async`/`await` + Combine
 - [ ] Will distribute via Swift Package Index
 
 ### `flutter/speech` 🗓 Planned
-- [ ] Flutter plugin bridging the Kotlin SDK (Android) and Swift Package (iOS)
+- [ ] Native Dart SDK — calls C++ engines via `dart:ffi` on Android and iOS
+- [ ] `DeviceAISpeech` Dart class with stream-based transcription
 - [ ] Will publish: pub.dev `deviceai_speech`
 
 ### `react-native/speech` 🗓 Planned
-- [ ] TurboModule bridging the Kotlin SDK (Android) and Swift Package (iOS)
+- [ ] Native TypeScript SDK — calls C++ engines via JSI (New Architecture) on Android and iOS
+- [ ] Full TypeScript types, event-based callbacks
 - [ ] Will publish: npm `react-native-deviceai-speech`
 
 ---

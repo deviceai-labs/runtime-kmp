@@ -2,8 +2,9 @@
 
 > **Status: planned**
 
-Flutter plugin for on-device Speech-to-Text and Text-to-Speech, backed by
-[`kotlin/speech`](../../kotlin/speech) on Android and [`ios/speech`](../../ios/speech) on iOS.
+Native Dart SDK for on-device Speech-to-Text and Text-to-Speech in Flutter apps. Calls
+whisper.cpp and piper via FFI on both Android and iOS — no platform channel overhead,
+no dependency on the Kotlin or Swift SDKs.
 
 ## What it will provide
 
@@ -19,7 +20,22 @@ dependencies:
   deviceai_speech: ^0.1.0
 ```
 
+## Architecture
+
+```
+Your Flutter App  (Dart)
+    │
+    ▼
+flutter/speech  (Dart SDK + dart:ffi)
+    │
+    ▼
+whisper.cpp + piper  (C++ — same engines as kotlin/speech and ios/speech)
+```
+
+The Dart SDK calls the native C++ engines directly via `dart:ffi`, compiled as a shared
+library for Android (`.so`) and a static framework for iOS.
+
 ## Contributing
 
-Implementation PRs welcome. The plugin bridges Dart to the Kotlin SDK (`kotlin/speech`) on Android
-and the Swift Package (`ios/speech`) on iOS via Flutter's platform channel mechanism.
+Implementation PRs welcome. See the root [ARCHITECTURE.md](../../ARCHITECTURE.md) for
+the native engine details.
