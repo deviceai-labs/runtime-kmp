@@ -47,8 +47,8 @@ jobs:
 
       - name: Publish to Maven Central
         run: |
-          ./gradlew :kmp:core:publishAllPublicationsToMavenCentralRepository \
-            :kmp:speech:publishAllPublicationsToMavenCentralRepository \
+          ./gradlew :kotlin:core:publishAllPublicationsToMavenCentralRepository \
+            :kotlin:speech:publishAllPublicationsToMavenCentralRepository \
             --no-daemon
         env:
           RELEASE_VERSION: ${{ github.event.release.tag_name || github.event.inputs.version }}

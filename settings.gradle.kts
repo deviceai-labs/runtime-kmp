@@ -15,7 +15,7 @@ dependencyResolutionManagement {
     }
 }
 
-include(":kmp:core")
-include(":kmp:speech")
-include(":kmp:llm")
+include(":kotlin:core")
+include(":kotlin:speech")
+include(":kotlin:llm")
 include(":samples:composeApp")

@@ -14,9 +14,9 @@
 
 | Module | Who it's for | Distribution | Status |
 |--------|-------------|--------------|--------|
-| `kmp/core` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:core` | ✅ Available |
-| `kmp/speech` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:speech` | ✅ Available |
-| `kmp/llm` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:llm` | 🚧 In development |
+| `kotlin/core` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:core` | ✅ Available |
+| `kotlin/speech` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:speech` | ✅ Available |
+| `kotlin/llm` | Android & Kotlin Multiplatform | Maven Central `dev.deviceai:llm` | 🚧 In development |
 | `ios/speech` | Swift (iOS only) | Swift Package Index | 🗓 Planned |
 | `flutter/speech` | Flutter (Android + iOS) | pub.dev `deviceai_speech` | 🗓 Planned |
 | `react-native/speech` | React Native (Android + iOS) | npm `react-native-deviceai-speech` | 🗓 Planned |
@@ -77,7 +77,7 @@ Real numbers on real hardware.
 
 ---
 
-## Architecture (kmp/speech)
+## Architecture (kotlin/speech)
 
 ```
 Your App
@@ -85,12 +85,12 @@ Your App
     ▼
 DeviceAIRuntime.configure(Environment.DEVELOPMENT)   ← one-time SDK init
     │
-    ├── kmp/core   (dev.deviceai:core)
+    ├── kotlin/core   (dev.deviceai:core)
     │       CoreSDKLogger — structured, environment-aware logging
     │       ModelRegistry — model discovery, download, local management
     │       PlatformStorage — cross-platform file I/O
     │
-    └── kmp/speech  (dev.deviceai:speech)
+    └── kotlin/speech  (dev.deviceai:speech)
             SpeechBridge — unified STT + TTS Kotlin API
             ModelRegistry — Whisper + Piper model catalog from HuggingFace
                 │
@@ -316,9 +316,9 @@ git clone --recursive https://github.com/deviceai-labs/runtime-kmp.git
 cd runtime-kmp
 
 # Compile checks
-./gradlew :kmp:core:compileKotlinJvm
-./gradlew :kmp:speech:compileKotlinJvm
-./gradlew :kmp:speech:compileDebugKotlinAndroid
+./gradlew :kotlin:core:compileKotlinJvm
+./gradlew :kotlin:speech:compileKotlinJvm
+./gradlew :kotlin:speech:compileDebugKotlinAndroid
 
 # Run the desktop sample app
 ./gradlew :samples:composeApp:run
@@ -330,13 +330,13 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a deep-dive on the native layer, CMak
 
 ## Roadmap
 
-### `kmp/core` ✅ Available
+### `kotlin/core` ✅ Available
 - [x] `ModelInfo`, `LocalModel`, `PlatformStorage`, `MetadataStore`
 - [x] `CoreSDKLogger` — structured, environment-aware logging
 - [x] `DeviceAIRuntime` — unified SDK entry point with `Environment` config
 - [x] Published: `dev.deviceai:core`
 
-### `kmp/speech` ✅ Available
+### `kotlin/speech` ✅ Available
 - [x] STT via whisper.cpp — Android, iOS, Desktop
 - [x] TTS via Piper + ONNX — Android, iOS, Desktop
 - [x] Model auto-download from HuggingFace
@@ -344,7 +344,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a deep-dive on the native layer, CMak
 - [ ] Streaming TTS
 - [ ] Voice activity detection (VAD)
 
-### `kmp/llm` 🚧 In development
+### `kotlin/llm` 🚧 In development
 - [ ] Local LLM inference via llama.cpp
 - [ ] GGUF model support
 - [ ] Streaming token generation
