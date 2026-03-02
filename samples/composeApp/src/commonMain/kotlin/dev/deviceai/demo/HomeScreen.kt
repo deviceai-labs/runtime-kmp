@@ -78,7 +78,7 @@ class HomeScreen : Screen {
                 BrandingSection()
                 StatusSection(
                     state = loadingState,
-                    onGetStarted = { navigator.push(SpeechScreen()) },
+                    onGetStarted = { navigator.push(MainScreen()) },
                     onRetry = { viewModel.retryInitialize() }
                 )
                 Spacer(Modifier.height(16.dp))

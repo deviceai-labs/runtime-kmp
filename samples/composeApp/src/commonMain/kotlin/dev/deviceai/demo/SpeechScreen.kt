@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -54,6 +55,44 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.koin.compose.koinInject
 
+@Composable
+fun SpeechTabContent(viewModel: SpeechViewModel, padding: PaddingValues) {
+    val recordingState by viewModel.recordingState.collectAsState()
+
+    DisposableEffect(Unit) {
+        onDispose { viewModel.resetRecording() }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            TranscriptArea(recordingState)
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(bottom = 52.dp)
+        ) {
+            StatusLabel(recordingState)
+            Spacer(Modifier.height(24.dp))
+            MicButton(
+                recordingState = recordingState,
+                onClick = { viewModel.onMicButtonClicked() }
+            )
+        }
+    }
+}
+
 class SpeechScreen : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -61,11 +100,6 @@ class SpeechScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel: SpeechViewModel = koinInject()
-        val recordingState by viewModel.recordingState.collectAsState()
-
-        DisposableEffect(Unit) {
-            onDispose { viewModel.resetRecording() }
-        }
 
         Scaffold(
             topBar = {
@@ -88,36 +122,7 @@ class SpeechScreen : Screen {
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Transcript result area
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    TranscriptArea(recordingState)
-                }
-
-                // Mic button + status label
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(bottom = 52.dp)
-                ) {
-                    StatusLabel(recordingState)
-                    Spacer(Modifier.height(24.dp))
-                    MicButton(
-                        recordingState = recordingState,
-                        onClick = { viewModel.onMicButtonClicked() }
-                    )
-                }
-            }
+            SpeechTabContent(viewModel, padding)
         }
     }
 }

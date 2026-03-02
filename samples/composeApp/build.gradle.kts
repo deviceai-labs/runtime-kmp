@@ -33,6 +33,7 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.materialIconsExtended)
             implementation(project(":kotlin:speech"))
+            implementation(project(":kotlin:llm"))
 
             // DI
             implementation(libs.koin.core)
