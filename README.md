@@ -1,12 +1,57 @@
-# DeviceAI Runtime · KMP
+# DeviceAI Runtime
 
-**On-device AI runtime for Kotlin Multiplatform. Ship speech recognition and synthesis on Android, iOS, and Desktop — no cloud, no latency, no privacy risk.**
+**On-device AI runtime for mobile and desktop. Ship speech recognition and synthesis across Kotlin Multiplatform, Android, iOS, Flutter, and React Native — no cloud, no latency, no privacy risk.**
 
 [![Build](https://github.com/deviceai-labs/runtime-kmp/actions/workflows/ci.yml/badge.svg)](https://github.com/deviceai-labs/runtime-kmp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-[![Maven Central](https://img.shields.io/maven-central/v/dev.deviceai/runtime-speech)](https://central.sonatype.com/artifact/dev.deviceai/runtime-speech)
+[![Maven Central](https://img.shields.io/maven-central/v/dev.deviceai/kmp-speech)](https://central.sonatype.com/artifact/dev.deviceai/kmp-speech)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2-blueviolet?logo=kotlin)](https://kotlinlang.org)
 [![KMP](https://img.shields.io/badge/Kotlin_Multiplatform-Android%20%7C%20iOS%20%7C%20Desktop-blue)](https://www.jetbrains.com/kotlin-multiplatform/)
+
+---
+
+## What's available
+
+| Module | Platform | Distribution | Status |
+|--------|----------|--------------|--------|
+| `kmp/core` | Android · iOS · Desktop | Maven Central `dev.deviceai:kmp-core` | ✅ Available |
+| `kmp/speech` | Android · iOS · Desktop | Maven Central `dev.deviceai:kmp-speech` | ✅ Available |
+| `kmp/llm` | Android · iOS · Desktop | Maven Central `dev.deviceai:kmp-llm` | 🚧 In development |
+| `android/speech` | Android only | Maven Central `dev.deviceai:android-speech` | 🗓 Planned |
+| `ios/speech` | iOS only | Swift Package Index | 🗓 Planned |
+| `flutter/speech` | Android + iOS | pub.dev `deviceai_speech` | 🗓 Planned |
+| `react-native/speech` | Android + iOS | npm `react-native-deviceai-speech` | 🗓 Planned |
+
+**✅ Available** — published and usable today.
+**🚧 In development** — directory and Gradle module exist; API and native integration not yet complete.
+**🗓 Planned** — stub directory exists to signal intent; no implementation yet.
+
+---
+
+## Repository structure
+
+```
+deviceai/
+├── kmp/
+│   ├── core/       dev.deviceai:kmp-core      ✅  shared model management, storage, logging
+│   ├── speech/     dev.deviceai:kmp-speech    ✅  STT (Whisper) + TTS (Piper) for KMP
+│   └── llm/        dev.deviceai:kmp-llm       🚧  LLM inference via llama.cpp
+├── android/
+│   └── speech/     dev.deviceai:android-speech  🗓  Jetpack ViewModel wrapper around kmp/speech
+├── ios/
+│   └── speech/     Swift Package               🗓  Swift async/await wrapper around kmp/speech
+├── flutter/
+│   └── speech/     pub.dev: deviceai_speech    🗓  Flutter plugin bridging android + ios
+├── react-native/
+│   └── speech/     npm: react-native-deviceai-speech  🗓  TurboModule bridging android + ios
+└── samples/
+    ├── composeApp/ Compose Multiplatform demo  ✅
+    └── iosApp/     native iOS shell            ✅
+```
+
+The KMP modules (`kmp/`) ship to Maven Central and cover all platforms in a single dependency.
+The platform wrappers (`android/`, `ios/`, `flutter/`, `react-native/`) are for teams that want
+idiomatic, registry-native packages without adopting Kotlin Multiplatform.
 
 ---
 
@@ -19,7 +64,7 @@ Mobile AI is broken for most teams:
 - **Model loading is messy** — threading, memory pressure, cold-start, and caching reinvented every time
 - **Every team writes the same wrapper** — from scratch, badly
 
-DeviceAI Runtime gives you a single Kotlin Multiplatform API: one integration, all platforms, fully local.
+DeviceAI Runtime gives you a single API: one integration, all platforms, fully local.
 
 ---
 
@@ -35,7 +80,7 @@ Real numbers on real hardware.
 
 ---
 
-## Architecture
+## Architecture (kmp/speech)
 
 ```
 Your App
@@ -43,12 +88,12 @@ Your App
     ▼
 DeviceAIRuntime.configure(Environment.DEVELOPMENT)   ← one-time SDK init
     │
-    ├── runtime-core   (dev.deviceai:runtime-core)
+    ├── kmp/core   (dev.deviceai:kmp-core)
     │       CoreSDKLogger — structured, environment-aware logging
     │       ModelRegistry — model discovery, download, local management
     │       PlatformStorage — cross-platform file I/O
     │
-    └── runtime-speech  (dev.deviceai:runtime-speech)
+    └── kmp/speech  (dev.deviceai:kmp-speech)
             SpeechBridge — unified STT + TTS Kotlin API
             ModelRegistry — Whisper + Piper model catalog from HuggingFace
                 │
@@ -75,18 +120,24 @@ DeviceAIRuntime.configure(Environment.DEVELOPMENT)   ← one-time SDK init
 | Streaming transcription | ✅ |
 | Environment-aware logging | ✅ |
 | Offline — zero cloud dependency | ✅ |
-| LLM inference | 🗓 Planned |
+| LLM inference | 🚧 In development |
+| Android Jetpack wrapper | 🗓 Planned |
+| Swift Package | 🗓 Planned |
+| Flutter plugin | 🗓 Planned |
+| React Native module | 🗓 Planned |
 
 ---
 
-## Integration — 5 minutes to first transcription
+## Integration — Kotlin Multiplatform
+
+5 minutes to first transcription. Works on Android, iOS, and Desktop from a single dependency.
 
 ### Step 1 — Add dependencies
 
 ```kotlin
-// build.gradle.kts (your module)
-implementation("dev.deviceai:runtime-core:0.1.0")
-implementation("dev.deviceai:runtime-speech:0.1.0")
+// build.gradle.kts (your KMP module)
+implementation("dev.deviceai:kmp-core:<version>")
+implementation("dev.deviceai:kmp-speech:<version>")
 ```
 
 No extra repository config needed — both artifacts are on Maven Central.
@@ -95,7 +146,7 @@ No extra repository config needed — both artifacts are on Maven Central.
 
 ### Step 2 — Initialize the SDK
 
-Call `DeviceAIRuntime.configure()` **once**, before any other SDK call. This sets the log verbosity for the environment you're running in.
+Call `DeviceAIRuntime.configure()` **once**, before any other SDK call.
 
 #### Android — `Application.onCreate()` or `MainActivity.onCreate()`
 
@@ -257,7 +308,7 @@ Browse all voices via `ModelRegistry.getPiperVoices()` — filters by language a
 
 ---
 
-## Platform Support
+## Platform support
 
 | Platform | STT | TTS | Sample App |
 |----------|-----|-----|------------|
@@ -269,7 +320,7 @@ Browse all voices via `ModelRegistry.getPiperVoices()` — filters by language a
 
 ---
 
-## Building from Source
+## Building from source
 
 **Prerequisites:** CMake 3.22+, Android NDK r26+, Xcode 16+ (iOS), Kotlin 2.2+
 
@@ -278,9 +329,9 @@ git clone --recursive https://github.com/deviceai-labs/runtime-kmp.git
 cd runtime-kmp
 
 # Compile checks
-./gradlew :runtime-core:compileKotlinJvm
-./gradlew :runtime-speech:compileKotlinJvm
-./gradlew :runtime-speech:compileDebugKotlinAndroid
+./gradlew :kmp:core:compileKotlinJvm
+./gradlew :kmp:speech:compileKotlinJvm
+./gradlew :kmp:speech:compileDebugKotlinAndroid
 
 # Run the desktop sample app
 ./gradlew :samples:composeApp:run
@@ -292,40 +343,52 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a deep-dive on the native layer, CMak
 
 ## Roadmap
 
-DeviceAI Runtime is modular — each AI modality is an independent, independently-versioned module.
-
-### `runtime-core` — Shared Infrastructure ✅
+### `kmp/core` ✅ Available
 - [x] `ModelInfo`, `LocalModel`, `PlatformStorage`, `MetadataStore`
 - [x] `CoreSDKLogger` — structured, environment-aware logging
 - [x] `DeviceAIRuntime` — unified SDK entry point with `Environment` config
-- [x] Maven Central (`dev.deviceai:runtime-core:0.1.0`)
+- [x] Published: `dev.deviceai:kmp-core`
 
-### `runtime-speech` — Speech ✅
-- [x] STT via whisper.cpp
-- [x] TTS via Piper + ONNX
+### `kmp/speech` ✅ Available
+- [x] STT via whisper.cpp — Android, iOS, Desktop
+- [x] TTS via Piper + ONNX — Android, iOS, Desktop
 - [x] Model auto-download from HuggingFace
-- [x] KMP: Android, iOS, Desktop
-- [x] Maven Central (`dev.deviceai:runtime-speech:0.1.0`)
+- [x] Published: `dev.deviceai:kmp-speech`
 - [ ] Streaming TTS
 - [ ] Voice activity detection (VAD)
 
-### `runtime-llm` — Large Language Models 🗓
+### `kmp/llm` 🚧 In development
 - [ ] Local LLM inference via llama.cpp
 - [ ] GGUF model support
 - [ ] Streaming token generation
+- [ ] Will publish: `dev.deviceai:kmp-llm`
 
-### `runtime-vlm` — Vision-Language Models 🗓
-- [ ] Image + text inference on-device
-- [ ] Camera feed integration
+### `android/speech` 🗓 Planned
+- [ ] Jetpack ViewModel + Lifecycle-aware wrappers around `kmp/speech`
+- [ ] For Android-only teams that don't want a KMP setup
+- [ ] Will publish: `dev.deviceai:android-speech`
 
-### `runtime-kmp` — Meta-package 🗓
-- [ ] Single dependency that re-exports all modules
+### `ios/speech` 🗓 Planned
+- [ ] Swift `async`/`await` + Combine wrappers around the KMP XCFramework
+- [ ] For iOS-only teams that want a pure Swift dependency
+- [ ] Will distribute via Swift Package Index
+
+### `flutter/speech` 🗓 Planned
+- [ ] Flutter plugin bridging `android/speech` and `ios/speech`
+- [ ] Will publish: pub.dev `deviceai_speech`
+
+### `react-native/speech` 🗓 Planned
+- [ ] TurboModule bridging `android/speech` and `ios/speech`
+- [ ] Will publish: npm `react-native-deviceai-speech`
 
 ---
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and PRs welcome.
+
+Platform wrapper contributions (`android/`, `ios/`, `flutter/`, `react-native/`) are especially
+welcome — each stub directory contains a README with the expected API surface.
 
 ---
 
