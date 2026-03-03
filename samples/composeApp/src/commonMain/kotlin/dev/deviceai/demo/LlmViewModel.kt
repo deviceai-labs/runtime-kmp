@@ -123,10 +123,23 @@ class LlmViewModel {
         _messages.value = _messages.value + userMsg + assistantMsg
         _isGenerating.value = true
 
+        // Encode the full conversation history (all messages up to and including
+        // the new user message) using the \x01-delimited u:/a: protocol that
+        // build_prompt() in C++ parses into a multi-turn llama_chat_message array.
+        // This gives the model proper context of prior exchanges.
+        val encodedPrompt = _messages.value
+            .filter { it.id <= userMsg.id }
+            .joinToString("\u0001") { msg ->
+                when (msg.role) {
+                    Role.USER      -> "u:${msg.text}"
+                    Role.ASSISTANT -> "a:${msg.text}"
+                }
+            }
+
         scope.launch {
             withContext(Dispatchers.IO) {
                 runCatching {
-                    LlmBridge.generateStream(text, callback = object : LlmStream {
+                    LlmBridge.generateStream(encodedPrompt, callback = object : LlmStream {
                         override fun onToken(token: String) {
                             val current = _messages.value.toMutableList()
                             val idx = current.indexOfLast { it.role == Role.ASSISTANT && it.isStreaming }

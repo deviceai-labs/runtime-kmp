@@ -52,21 +52,58 @@ static void cleanup() {
 // Falls back to returning the raw prompt on error.
 // ═══════════════════════════════════════════════════════════════
 
+// Build a fully-formatted prompt from a conversation history string.
+//
+// The `prompt` parameter encodes the full conversation as segments separated
+// by the ASCII SOH byte (\x01).  Each segment is prefixed with a role tag:
+//   "u:<text>"  → user message
+//   "a:<text>"  → assistant message
+// Plain prompts with no \x01 delimiter are treated as a single user message
+// (backward compatible with single-turn callers).
+//
+// The systemPrompt is always prepended as the first "system" message.
 static std::string build_prompt(const std::string &prompt, const std::string &systemPrompt) {
     if (!g_model) return prompt;
 
+    // Keep content strings alive while we hold pointers into them.
+    std::vector<std::string>        storage;
     std::vector<llama_chat_message> msgs;
-    if (!systemPrompt.empty()) msgs.push_back({"system", systemPrompt.c_str()});
-    msgs.push_back({"user", prompt.c_str()});
 
-    const char *tmpl = llama_model_chat_template(g_model, /*name=*/nullptr);
+    if (!systemPrompt.empty()) {
+        storage.push_back(systemPrompt);
+        msgs.push_back({"system", storage.back().c_str()});
+    }
 
-    // First pass: get required buffer size
-    int32_t sz = llama_chat_apply_template(tmpl, msgs.data(), msgs.size(), /*add_ass=*/true, nullptr, 0);
-    if (sz <= 0) return prompt;  // no template or error — use raw prompt
+    // Parse history-encoded prompt (segments separated by \x01).
+    size_t pos = 0;
+    while (pos <= prompt.size()) {
+        size_t end = prompt.find('\x01', pos);
+        if (end == std::string::npos) end = prompt.size();
+
+        std::string seg = prompt.substr(pos, end - pos);
+        pos = end + 1;
+
+        if (seg.size() >= 2 && seg[1] == ':') {
+            char role_ch  = seg[0];
+            std::string content = seg.substr(2);
+            storage.push_back(std::move(content));
+            if      (role_ch == 'u') msgs.push_back({"user",      storage.back().c_str()});
+            else if (role_ch == 'a') msgs.push_back({"assistant", storage.back().c_str()});
+        } else if (!seg.empty()) {
+            // Plain (non-encoded) prompt — single user turn.
+            storage.push_back(seg);
+            msgs.push_back({"user", storage.back().c_str()});
+        }
+    }
+
+    if (msgs.empty()) return prompt;
+
+    const char *tmpl = llama_model_chat_template(g_model, nullptr);
+    int32_t sz = llama_chat_apply_template(tmpl, msgs.data(), msgs.size(), true, nullptr, 0);
+    if (sz <= 0) return prompt;
 
     std::string out(sz, '\0');
-    llama_chat_apply_template(tmpl, msgs.data(), msgs.size(), /*add_ass=*/true, out.data(), sz);
+    llama_chat_apply_template(tmpl, msgs.data(), msgs.size(), true, out.data(), sz);
     return out;
 }
 
@@ -102,6 +139,9 @@ static std::string do_generate(
 ) {
     if (!g_model || !g_ctx) return "";
 
+    // Clear the KV cache so each call starts with a fresh context.
+    // Without this, stale tokens from the previous turn corrupt the output.
+    llama_memory_clear(llama_get_memory(g_ctx), /*data=*/false);
     llama_perf_context_reset(g_ctx);
 
     const llama_vocab *vocab = llama_model_get_vocab(g_model);

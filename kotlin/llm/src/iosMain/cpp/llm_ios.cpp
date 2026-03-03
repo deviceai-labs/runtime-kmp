@@ -37,17 +37,43 @@ static llama_sampler *build_sampler(float temperature, float top_p, int top_k, f
     return chain;
 }
 
+// See llm_jni.cpp for the history-encoding protocol (\x01-delimited, u:/a: prefixes).
 static std::string build_full_prompt(const char *prompt, const char *system_prompt) {
     std::string sp(system_prompt ? system_prompt : "");
-    std::string p(prompt ? prompt : "");
+    std::string p(prompt  ? prompt  : "");
     if (!g_model) return p;
 
+    std::vector<std::string>        storage;
     std::vector<llama_chat_message> msgs;
-    if (!sp.empty()) msgs.push_back({"system", sp.c_str()});
-    msgs.push_back({"user", p.c_str()});
+
+    if (!sp.empty()) {
+        storage.push_back(sp);
+        msgs.push_back({"system", storage.back().c_str()});
+    }
+
+    size_t pos = 0;
+    while (pos <= p.size()) {
+        size_t end = p.find('\x01', pos);
+        if (end == std::string::npos) end = p.size();
+
+        std::string seg = p.substr(pos, end - pos);
+        pos = end + 1;
+
+        if (seg.size() >= 2 && seg[1] == ':') {
+            char role_ch = seg[0];
+            std::string content = seg.substr(2);
+            storage.push_back(std::move(content));
+            if      (role_ch == 'u') msgs.push_back({"user",      storage.back().c_str()});
+            else if (role_ch == 'a') msgs.push_back({"assistant", storage.back().c_str()});
+        } else if (!seg.empty()) {
+            storage.push_back(seg);
+            msgs.push_back({"user", storage.back().c_str()});
+        }
+    }
+
+    if (msgs.empty()) return p;
 
     const char *tmpl = llama_model_chat_template(g_model, nullptr);
-
     int32_t sz = llama_chat_apply_template(tmpl, msgs.data(), msgs.size(), true, nullptr, 0);
     if (sz <= 0) return p;
 
@@ -67,6 +93,7 @@ static std::string do_generate(
 ) {
     if (!g_model || !g_ctx) return "";
 
+    llama_memory_clear(llama_get_memory(g_ctx), /*data=*/false);
     llama_perf_context_reset(g_ctx);
 
     const llama_vocab *vocab = llama_model_get_vocab(g_model);
