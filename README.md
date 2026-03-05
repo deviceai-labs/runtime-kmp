@@ -1,10 +1,10 @@
 # DeviceAI Runtime
 
-**On-device AI runtime for Kotlin, iOS, Flutter, and React Native. Ship speech recognition and synthesis on Android, iOS, and Desktop. No cloud, no privacy risk.**
+**On-device AI runtime for Kotlin, iOS, Flutter, and React Native. Ship speech recognition, synthesis, and LLM inference on Android, iOS, and Desktop — no cloud, no latency, no privacy risk.**
 
 [![Build](https://github.com/deviceai-labs/deviceai/actions/workflows/ci.yml/badge.svg)](https://github.com/deviceai-labs/deviceai/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-[![Maven Central](https://img.shields.io/maven-central/v/dev.deviceai/speech)](https://central.sonatype.com/artifact/dev.deviceai/speech)
+[![Maven Central](https://img.shields.io/maven-central/v/dev.deviceai/kmp-speech)](https://central.sonatype.com/artifact/dev.deviceai/kmp-speech)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2-blueviolet?logo=kotlin)](https://kotlinlang.org)
 [![KMP](https://img.shields.io/badge/Kotlin_Multiplatform-Android%20%7C%20iOS%20%7C%20Desktop-blue)](https://www.jetbrains.com/kotlin-multiplatform/)
 
@@ -14,21 +14,20 @@
 
 | Module | Language | Distribution | Status |
 |--------|----------|--------------|--------|
-| `kotlin/core` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:core` | ✅ Available |
-| `kotlin/speech` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:speech` | ✅ Available |
-| `kotlin/llm` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:llm` | 🚧 In development |
+| `kotlin/core` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:kmp-core` | ✅ Available |
+| `kotlin/speech` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:kmp-speech` | ✅ Available |
+| `kotlin/llm` | Kotlin (Android + KMP) | Maven Central `dev.deviceai:kmp-llm` | ✅ Available |
 | `ios/speech` | Swift | Swift Package Index | 🗓 Planned |
 | `flutter/speech` | Dart | pub.dev `deviceai_speech` | 🗓 Planned |
 | `react-native/speech` | TypeScript | npm `react-native-deviceai-speech` | 🗓 Planned |
 
 **✅ Available** — published and usable today.
-**🚧 In development** — module exists; API and native integration not yet complete.
 **🗓 Planned** — stub exists to signal intent; no implementation yet.
 
-Each SDK is **independent and native to its platform** — they all call the same C++ engines (whisper.cpp, piper) directly, with no cross-language bridging:
+Each SDK is **independent and native to its platform** — they all call the same C++ engines (whisper.cpp, piper, llama.cpp) directly, with no cross-language bridging:
 
 - `kotlin/` — Kotlin API, JNI bridge to C++ on Android/JVM, C interop on iOS (for KMP projects)
-- `ios/` — Swift API, links whisper.cpp/piper directly as a Swift Package binary target
+- `ios/` — Swift API, links C++ engines directly as a Swift Package binary target
 - `flutter/` — Dart API, calls C++ via `dart:ffi` on Android and iOS
 - `react-native/` — TypeScript API, calls C++ via JSI (New Architecture) on Android and iOS
 
@@ -39,9 +38,9 @@ Each SDK is **independent and native to its platform** — they all call the sam
 ```
 deviceai/
 ├── kotlin/
-│   ├── core/       dev.deviceai:core    ✅  model management, storage, logging
-│   ├── speech/     dev.deviceai:speech  ✅  STT (Whisper) + TTS (Piper)
-│   └── llm/        dev.deviceai:llm     🚧  LLM inference via llama.cpp
+│   ├── core/       dev.deviceai:kmp-core    ✅  model management, storage, logging
+│   ├── speech/     dev.deviceai:kmp-speech  ✅  STT (Whisper) + TTS (Piper)
+│   └── llm/        dev.deviceai:kmp-llm     ✅  LLM inference via llama.cpp + offline RAG
 ├── ios/
 │   └── speech/     Swift Package            🗓  Swift async/await wrapper
 ├── flutter/
@@ -80,7 +79,7 @@ Real numbers on real hardware.
 
 ---
 
-## Architecture (kotlin/speech)
+## Architecture
 
 ```
 Your App
@@ -88,23 +87,27 @@ Your App
     ▼
 DeviceAIRuntime.configure(Environment.DEVELOPMENT)   ← one-time SDK init
     │
-    ├── kotlin/core   (dev.deviceai:core)
+    ├── kotlin/core   (dev.deviceai:kmp-core)
     │       CoreSDKLogger — structured, environment-aware logging
     │       ModelRegistry — model discovery, download, local management
     │       PlatformStorage — cross-platform file I/O
     │
-    └── kotlin/speech  (dev.deviceai:speech)
-            SpeechBridge — unified STT + TTS Kotlin API
-            ModelRegistry — Whisper + Piper model catalog from HuggingFace
+    ├── kotlin/speech  (dev.deviceai:kmp-speech)
+    │       SpeechBridge — unified STT + TTS Kotlin API
+    │       ModelRegistry — Whisper + Piper model catalog from HuggingFace
+    │           │
+    │           ├── Android / Desktop  →  JNI → libspeech_jni.so/.dylib
+    │           └── iOS  →  C Interop → libspeech_merged.a
+    │                           ├── whisper.cpp  (STT)
+    │                           └── piper + ONNX  (TTS)
+    │
+    └── kotlin/llm  (dev.deviceai:kmp-llm)
+            LlmBridge — chat API with streaming Flow<String>
+            BM25RagStore — offline retrieval-augmented generation
                 │
-                ├── Android / Desktop
-                │       JNI → libspeech_jni.so / libspeech_jni.dylib
-                │
-                └── iOS
-                        C Interop → libspeech_merged.a
-                            │
-                            ├── whisper.cpp  (STT)
-                            └── piper + ONNX  (TTS)
+                ├── Android / Desktop  →  JNI → libdeviceai_llm_jni.so/.dylib
+                └── iOS  →  C Interop → libllm_merged.a
+                                └── llama.cpp (Metal + CoreML)
 ```
 
 ---
@@ -115,12 +118,13 @@ DeviceAIRuntime.configure(Environment.DEVELOPMENT)   ← one-time SDK init
 |---------|--------|
 | Speech-to-Text (Whisper) | ✅ Android, iOS, Desktop |
 | Text-to-Speech (Piper) | ✅ Android, iOS, Desktop |
+| LLM inference (llama.cpp) | ✅ Android, iOS, Desktop |
+| Offline RAG (BM25) | ✅ Android, iOS, Desktop |
+| Streaming LLM generation (Flow) | ✅ Android, iOS, Desktop |
 | Auto model download (HuggingFace) | ✅ |
 | GPU acceleration (Metal / Vulkan) | ✅ |
-| Streaming transcription | ✅ |
 | Environment-aware logging | ✅ |
 | Offline — zero cloud dependency | ✅ |
-| LLM inference | 🚧 In development |
 | Swift Package | 🗓 Planned |
 | Flutter plugin | 🗓 Planned |
 | React Native module | 🗓 Planned |
@@ -135,11 +139,12 @@ Works in any Kotlin project. No KMP setup required for Android-only projects.
 
 ```kotlin
 // build.gradle.kts
-implementation("dev.deviceai:core:<version>")
-implementation("dev.deviceai:speech:<version>")
+implementation("dev.deviceai:kmp-core:0.2.0-alpha01")
+implementation("dev.deviceai:kmp-speech:0.2.0-alpha01")   // STT + TTS
+implementation("dev.deviceai:kmp-llm:0.2.0-alpha01")      // LLM inference + RAG
 ```
 
-No extra repository config needed — both artifacts are on Maven Central.
+No extra repository config needed — all artifacts are on Maven Central.
 
 ---
 
@@ -157,7 +162,6 @@ import dev.deviceai.models.PlatformStorage
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         DeviceAIRuntime.configure(Environment.DEVELOPMENT)
         PlatformStorage.initialize(this) // Android needs a Context for file storage
         setContent { App() }
@@ -252,6 +256,60 @@ SpeechBridge.shutdownTts()
 
 ---
 
+### Step 6 — Run a local LLM
+
+```kotlin
+import dev.deviceai.llm.LlmBridge
+import dev.deviceai.llm.LlmInitConfig
+import dev.deviceai.llm.LlmGenConfig
+import dev.deviceai.llm.LlmMessage
+import dev.deviceai.llm.LlmRole
+
+LlmBridge.initLlm(
+    modelPath = llmModel.modelPath,
+    config    = LlmInitConfig(contextSize = 2048, maxThreads = 4, useGpu = true)
+)
+
+val messages = listOf(
+    LlmMessage(LlmRole.SYSTEM, "You are a helpful assistant."),
+    LlmMessage(LlmRole.USER, "What is Kotlin Multiplatform?")
+)
+
+// Streaming (recommended)
+LlmBridge.generateStream(messages, LlmGenConfig(maxTokens = 512))
+    .collect { token -> print(token) }
+
+// Blocking
+val result = LlmBridge.generate(messages, LlmGenConfig(maxTokens = 512))
+println(result.text)
+
+LlmBridge.shutdown()
+```
+
+---
+
+### Step 7 — Offline RAG (optional)
+
+Attach a `BM25RagStore` to inject local documents as context — no embedding model required.
+
+```kotlin
+import dev.deviceai.llm.rag.BM25RagStore
+import dev.deviceai.llm.rag.RagChunk
+
+val store = BM25RagStore()
+store.addChunks(listOf(
+    RagChunk("1", "DeviceAI supports Android, iOS, and Desktop."),
+    RagChunk("2", "LLM inference uses llama.cpp with Metal on Apple Silicon.")
+))
+
+LlmBridge.generateStream(
+    messages = messages,
+    config   = LlmGenConfig(maxTokens = 512, ragStore = store)
+).collect { print(it) }
+```
+
+---
+
 ## Logging
 
 `DeviceAIRuntime.configure()` sets the log verbosity automatically:
@@ -296,23 +354,34 @@ DeviceAIRuntime.configure(
 
 Browse all voices via `ModelRegistry.getPiperVoices()` — filters by language and quality.
 
+### LLM — via llama.cpp (GGUF format)
+
+| Model | Size | Best for |
+|-------|------|----------|
+| SmolLM2-360M-Instruct | ~220 MB | Fastest, mobile-first |
+| SmolLM2-1.7B-Instruct | ~1 GB | Balanced |
+| Qwen2.5-0.5B-Instruct | ~400 MB | Multilingual, compact |
+| Qwen2.5-1.5B-Instruct | ~900 MB | Multilingual, quality |
+
+Browse available models via `LlmCatalog`.
+
 ---
 
 ## Platform support
 
-| Platform | STT | TTS | Sample App |
-|----------|-----|-----|------------|
-| Android (API 26+) | ✅ | ✅ | ✅ |
-| iOS 16+ | ✅ | ✅ | ✅ |
-| macOS Desktop | ✅ | ✅ | ✅ |
-| Linux | 🚧 | 🚧 | — |
-| Windows | 🚧 | 🚧 | — |
+| Platform | STT | TTS | LLM | Sample App |
+|----------|-----|-----|-----|------------|
+| Android (API 26+) | ✅ | ✅ | ✅ | ✅ |
+| iOS 17+ | ✅ | ✅ | ✅ | ✅ |
+| macOS Desktop | ✅ | ✅ | ✅ | ✅ |
+| Linux | 🚧 | 🚧 | 🚧 | — |
+| Windows | 🚧 | 🚧 | 🚧 | — |
 
 ---
 
 ## Building from source
 
-**Prerequisites:** CMake 3.22+, Android NDK r26+, Xcode 16+ (iOS), Kotlin 2.2+
+**Prerequisites:** CMake 3.22+, Android NDK r26+, Xcode 26+ (iOS), Kotlin 2.2+
 
 ```bash
 git clone --recursive https://github.com/deviceai-labs/deviceai.git
@@ -322,6 +391,8 @@ cd deviceai
 ./gradlew :kotlin:core:compileKotlinJvm
 ./gradlew :kotlin:speech:compileKotlinJvm
 ./gradlew :kotlin:speech:compileDebugKotlinAndroid
+./gradlew :kotlin:llm:compileKotlinJvm
+./gradlew :kotlin:llm:compileDebugKotlinAndroid
 
 # Run the desktop sample app
 ./gradlew :samples:composeApp:run
@@ -337,21 +408,24 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a deep-dive on the native layer, CMak
 - [x] `ModelInfo`, `LocalModel`, `PlatformStorage`, `MetadataStore`
 - [x] `CoreSDKLogger` — structured, environment-aware logging
 - [x] `DeviceAIRuntime` — unified SDK entry point with `Environment` config
-- [x] Published: `dev.deviceai:core`
+- [x] Published: `dev.deviceai:kmp-core`
 
 ### `kotlin/speech` ✅ Available
 - [x] STT via whisper.cpp — Android, iOS, Desktop
 - [x] TTS via Piper + ONNX — Android, iOS, Desktop
 - [x] Model auto-download from HuggingFace
-- [x] Published: `dev.deviceai:speech`
-- [ ] Streaming TTS
 - [x] Voice activity detection (VAD) — adaptive energy-based, trims silence pre-inference
+- [x] Published: `dev.deviceai:kmp-speech`
+- [ ] Streaming TTS
 
-### `kotlin/llm` 🚧 In development
-- [ ] Local LLM inference via llama.cpp
-- [ ] GGUF model support
-- [ ] Streaming token generation
-- [ ] Will publish: `dev.deviceai:llm`
+### `kotlin/llm` ✅ Available
+- [x] LLM inference via llama.cpp — Android, iOS, Desktop
+- [x] GGUF model support (SmolLM2, Qwen2.5, and any GGUF-compatible model)
+- [x] Streaming token generation via `Flow<String>`
+- [x] Multi-turn conversation with `List<LlmMessage>`
+- [x] Offline RAG via `BM25RagStore` — no embedding model required
+- [x] GPU acceleration (Metal on iOS/macOS, Vulkan on Android)
+- [x] Published: `dev.deviceai:kmp-llm`
 
 ### `ios/speech` 🗓 Planned
 - [ ] Native Swift SDK — links whisper.cpp + piper directly, no KMP dependency
@@ -381,7 +455,7 @@ welcome — each stub directory contains a README with the expected API surface.
 
 ## Sample App
 
-`samples/composeApp/` is a working Compose Multiplatform demo — auto-downloads whisper-tiny on first launch, records audio, and shows transcription with live latency. Runs on Android, iOS, and Desktop.
+`samples/composeApp/` is a working Compose Multiplatform demo — auto-downloads models on first launch, records audio, transcribes speech, and runs local LLM chat. Runs on Android, iOS, and Desktop.
 
 ```bash
 # Desktop

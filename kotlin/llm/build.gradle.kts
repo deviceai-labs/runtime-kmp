@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.deviceai"
-version = (System.getenv("RELEASE_VERSION") ?: "0.1.0-SNAPSHOT")
+version = (System.getenv("RELEASE_VERSION") ?: "0.2.0-alpha01")
 
 val minIos = "17.0"
 
