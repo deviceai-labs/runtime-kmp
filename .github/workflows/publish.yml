@@ -1,18 +1,39 @@
 name: Publish
 
+# Triggers on module-scoped tags:
+#   kotlin/vX.Y.Z          → publishes kotlin/core, kotlin/speech, kotlin/llm
+#   ios-speech/vX.Y.Z      → publishes ios/speech  (placeholder)
+#   flutter-speech/vX.Y.Z  → publishes flutter/speech  (placeholder)
+#   rn-speech/vX.Y.Z       → publishes react-native/speech  (placeholder)
+#
+# Cancels any in-progress run for the same tag prefix so a corrected tag
+# push doesn't queue behind a stale run.
+
 on:
-  release:
-    types: [ published ]
+  push:
+    tags:
+      - 'kotlin/v*'
+      - 'ios-speech/v*'
+      - 'flutter-speech/v*'
+      - 'rn-speech/v*'
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Release version (e.g. 0.1.1)'
+      module:
+        description: 'Module to publish (kotlin | ios-speech | flutter-speech | rn-speech)'
         required: true
-        default: '0.1.0'
+        default: 'kotlin'
+      version:
+        description: 'Release version (e.g. 0.2.0-alpha01)'
+        required: true
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  publish:
-    name: Publish to Maven Central
+  publish-kotlin:
+    name: Publish kotlin/* to Maven Central
+    if: startsWith(github.ref, 'refs/tags/kotlin/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.module == 'kotlin')
     runs-on: macos-latest
 
     permissions:
@@ -37,23 +58,60 @@ jobs:
         run: |
           yes | sdkmanager --install "ndk;26.3.11579264" "cmake;3.22.1"
 
-      - name: Cache Gradle
+      - name: Cache Gradle + Konan
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts') }}
+            ~/.konan
+          key: gradle-macos-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-macos-
 
-      - name: Publish to Maven Central
+      - name: Resolve version
+        id: version
         run: |
-          ./gradlew :kotlin:core:publishAllPublicationsToMavenCentralRepository \
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            # tag = kotlin/vX.Y.Z → strip "kotlin/v"
+            echo "version=${GITHUB_REF_NAME#kotlin/v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish kotlin/core, kotlin/speech, kotlin/llm
+        run: |
+          ./gradlew \
+            :kotlin:core:publishAllPublicationsToMavenCentralRepository \
             :kotlin:speech:publishAllPublicationsToMavenCentralRepository \
+            :kotlin:llm:publishAllPublicationsToMavenCentralRepository \
             --no-daemon
         env:
-          RELEASE_VERSION: ${{ github.event.release.tag_name || github.event.inputs.version }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+  # ── Placeholder jobs for future platform SDKs ────────────────────────────
+
+  publish-ios-speech:
+    name: Publish ios/speech
+    if: startsWith(github.ref, 'refs/tags/ios-speech/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.module == 'ios-speech')
+    runs-on: macos-latest
+    steps:
+      - run: echo "ios/speech publish not yet implemented"
+
+  publish-flutter-speech:
+    name: Publish flutter/speech
+    if: startsWith(github.ref, 'refs/tags/flutter-speech/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.module == 'flutter-speech')
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "flutter/speech publish not yet implemented"
+
+  publish-rn-speech:
+    name: Publish react-native/speech
+    if: startsWith(github.ref, 'refs/tags/rn-speech/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.module == 'rn-speech')
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "react-native/speech publish not yet implemented"
