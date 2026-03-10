@@ -12,10 +12,11 @@ option(SPEECHKMP_ENABLE_TTS "Enable Text-to-Speech (requires ONNX Runtime)" OFF)
 #                        PATHS
 # ═══════════════════════════════════════════════════════════════
 
-set(WHISPER_DIR "${CMAKE_SOURCE_DIR}/../../../../../whisper.cpp")
-set(PIPER_DIR "${CMAKE_SOURCE_DIR}/../../../../../piper")
-set(ONNX_DIR "${CMAKE_SOURCE_DIR}/../../../../../onnxruntime")
-set(ESPEAK_DIR "${CMAKE_SOURCE_DIR}/../../../../../espeak-ng")
+set(WHISPER_DIR  "${CMAKE_SOURCE_DIR}/../../../../../whisper.cpp")
+set(PIPER_DIR    "${CMAKE_SOURCE_DIR}/../../../../../piper")
+set(ONNX_DIR     "${CMAKE_SOURCE_DIR}/../../../../../onnxruntime")
+set(ESPEAK_DIR   "${CMAKE_SOURCE_DIR}/../../../../../espeak-ng")
+set(ENGINE_DIR   "${CMAKE_SOURCE_DIR}/../../../../../cpp/speech")
 
 # ═══════════════════════════════════════════════════════════════
 #                      WHISPER.CPP (STT)
@@ -108,7 +109,10 @@ if(ANDROID)
     find_library(log-lib log)
 endif()
 
-set(JNI_SOURCES whisper_jni.cpp)
+set(JNI_SOURCES
+    whisper_jni.cpp
+    ${ENGINE_DIR}/deviceai_speech_engine.cpp
+)
 
 if(SPEECHKMP_ENABLE_TTS)
     list(APPEND JNI_SOURCES piper_jni.cpp)
@@ -118,6 +122,7 @@ add_library(speech_jni SHARED ${JNI_SOURCES})
 
 target_include_directories(speech_jni PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${ENGINE_DIR}
     ${WHISPER_DIR}/include
     ${WHISPER_DIR}
 )

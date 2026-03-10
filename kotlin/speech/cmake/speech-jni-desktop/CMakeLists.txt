@@ -9,11 +9,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #                        PATHS
 # ═══════════════════════════════════════════════════════════════
 
-set(WHISPER_DIR "${CMAKE_SOURCE_DIR}/../../../../whisper.cpp")
-set(PIPER_DIR "${CMAKE_SOURCE_DIR}/../../../../piper")
-set(ONNX_DIR "${CMAKE_SOURCE_DIR}/../../../../onnxruntime")
-set(ESPEAK_DIR "${CMAKE_SOURCE_DIR}/../../../../espeak-ng")
-set(JNI_CPP_DIR "${PROJECT_SOURCE_DIR}/../../src/commonMain/cpp")
+set(WHISPER_DIR  "${CMAKE_SOURCE_DIR}/../../../../whisper.cpp")
+set(PIPER_DIR    "${CMAKE_SOURCE_DIR}/../../../../piper")
+set(ONNX_DIR     "${CMAKE_SOURCE_DIR}/../../../../onnxruntime")
+set(ESPEAK_DIR   "${CMAKE_SOURCE_DIR}/../../../../espeak-ng")
+set(ENGINE_DIR   "${CMAKE_SOURCE_DIR}/../../../../cpp/speech")
+set(JNI_CPP_DIR  "${PROJECT_SOURCE_DIR}/../../src/commonMain/cpp")
 
 # ═══════════════════════════════════════════════════════════════
 #                      WHISPER.CPP
@@ -107,10 +108,12 @@ include_directories(${JNI_INCLUDE_DIRS})
 add_library(speech_jni SHARED
     ${JNI_CPP_DIR}/whisper_jni.cpp
     ${JNI_CPP_DIR}/piper_jni.cpp
+    ${ENGINE_DIR}/deviceai_speech_engine.cpp
 )
 
 target_include_directories(speech_jni PRIVATE
     ${JNI_CPP_DIR}
+    ${ENGINE_DIR}
     ${WHISPER_DIR}/include
     ${WHISPER_DIR}
 )
@@ -119,6 +122,7 @@ if(EXISTS ${PIPER_DIR}/src/cpp)
     target_include_directories(speech_jni PRIVATE
         ${PIPER_DIR}/src/cpp
         ${ONNX_DIR}/include
+        ${ESPEAK_DIR}/src/include
     )
 endif()
 

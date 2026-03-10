@@ -9,7 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #                           PATHS
 # ═══════════════════════════════════════════════════════════════
 
-set(LLAMA_DIR "${CMAKE_SOURCE_DIR}/../../../../../llama.cpp")
+set(LLAMA_DIR      "${CMAKE_SOURCE_DIR}/../../../../../llama.cpp")
+set(ENGINE_DIR     "${CMAKE_SOURCE_DIR}/../../../../../cpp/llm")
 
 # ═══════════════════════════════════════════════════════════════
 #                         llama.cpp
@@ -41,10 +42,14 @@ if(ANDROID)
     find_library(log-lib log)
 endif()
 
-add_library(deviceai_llm_jni SHARED llm_jni.cpp)
+add_library(deviceai_llm_jni SHARED
+    llm_jni.cpp
+    ${ENGINE_DIR}/deviceai_llm_engine.cpp
+)
 
 target_include_directories(deviceai_llm_jni PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${ENGINE_DIR}
     ${LLAMA_DIR}/include
     ${LLAMA_DIR}
 )

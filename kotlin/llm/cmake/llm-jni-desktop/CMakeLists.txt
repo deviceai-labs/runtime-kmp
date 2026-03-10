@@ -5,7 +5,8 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(LLAMA_DIR "${CMAKE_SOURCE_DIR}/../../../../llama.cpp")
+set(LLAMA_DIR  "${CMAKE_SOURCE_DIR}/../../../../llama.cpp")
+set(ENGINE_DIR "${CMAKE_SOURCE_DIR}/../../../../cpp/llm")
 
 set(LLAMA_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -20,10 +21,12 @@ endif()
 
 add_library(deviceai_llm_jni SHARED
     ${CMAKE_SOURCE_DIR}/../../src/commonMain/cpp/llm_jni.cpp
+    ${ENGINE_DIR}/deviceai_llm_engine.cpp
 )
 
 target_include_directories(deviceai_llm_jni PRIVATE
     ${CMAKE_SOURCE_DIR}/../../src/commonMain/cpp
+    ${ENGINE_DIR}
     ${LLAMA_DIR}/include
     ${LLAMA_DIR}
 )

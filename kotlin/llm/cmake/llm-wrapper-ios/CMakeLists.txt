@@ -9,8 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #                           PATHS
 # ═══════════════════════════════════════════════════════════════
 
-set(LLAMA_DIR "${CMAKE_SOURCE_DIR}/../../../../llama.cpp")
+set(LLAMA_DIR  "${CMAKE_SOURCE_DIR}/../../../../llama.cpp")
 set(BRIDGE_DIR "${CMAKE_SOURCE_DIR}/../../src/iosMain/cpp")
+set(ENGINE_DIR "${CMAKE_SOURCE_DIR}/../../../../cpp/llm")
 
 # ═══════════════════════════════════════════════════════════════
 #                         llama.cpp
@@ -33,9 +34,11 @@ endif()
 
 add_library(llm_static STATIC
     ${BRIDGE_DIR}/llm_ios.cpp
+    ${ENGINE_DIR}/deviceai_llm_engine.cpp
 )
 
 target_include_directories(llm_static PRIVATE
+    ${ENGINE_DIR}
     ${LLAMA_DIR}/include
     ${LLAMA_DIR}
     ${CMAKE_SOURCE_DIR}/../../src/iosMain/c_interop/include

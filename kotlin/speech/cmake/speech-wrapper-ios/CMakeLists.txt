@@ -21,11 +21,12 @@ option(SPEECHKMP_ENABLE_TTS "Enable Text-to-Speech (requires ONNX Runtime)" OFF)
 #                        PATHS
 # ═══════════════════════════════════════════════════════════════
 
-set(WHISPER_DIR "${CMAKE_SOURCE_DIR}/../../../../whisper.cpp")
-set(PIPER_DIR "${CMAKE_SOURCE_DIR}/../../../../piper")
-set(ONNX_DIR "${CMAKE_SOURCE_DIR}/../../../../onnxruntime")
-set(ESPEAK_DIR "${CMAKE_SOURCE_DIR}/../../../../espeak-ng")
-set(IOS_CPP_DIR "${PROJECT_SOURCE_DIR}/../../src/iosMain/cpp")
+set(WHISPER_DIR     "${CMAKE_SOURCE_DIR}/../../../../whisper.cpp")
+set(PIPER_DIR       "${CMAKE_SOURCE_DIR}/../../../../piper")
+set(ONNX_DIR        "${CMAKE_SOURCE_DIR}/../../../../onnxruntime")
+set(ESPEAK_DIR      "${CMAKE_SOURCE_DIR}/../../../../espeak-ng")
+set(ENGINE_DIR      "${CMAKE_SOURCE_DIR}/../../../../cpp/speech")
+set(IOS_CPP_DIR     "${PROJECT_SOURCE_DIR}/../../src/iosMain/cpp")
 set(IOS_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../../src/iosMain/c_interop/include")
 
 # ═══════════════════════════════════════════════════════════════
@@ -57,6 +58,7 @@ endif()
 # Source files - only include whisper for now
 set(SPEECH_SOURCES
     ${IOS_CPP_DIR}/whisper_ios.cpp
+    ${ENGINE_DIR}/deviceai_speech_engine.cpp
 )
 
 # Add piper if TTS is enabled
@@ -67,6 +69,7 @@ endif()
 add_library(speech_static STATIC ${SPEECH_SOURCES})
 
 target_include_directories(speech_static PRIVATE
+    ${ENGINE_DIR}
     ${IOS_INCLUDE_DIR}
     ${WHISPER_DIR}/include
     ${WHISPER_DIR}
