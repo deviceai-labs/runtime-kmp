@@ -138,7 +138,12 @@ kotlin {
             create("llm") {
                 defFile("src/iosMain/c_interop/llm_ios.def")
                 packageName("dev.deviceai.llm.native")
-                compilerOpts("-I${projectDir}/src/iosMain/c_interop/include")
+                compilerOpts(
+                    "-I${projectDir}/src/iosMain/c_interop/include",
+                    "-I${rootDir}/cpp/llm",
+                    "-I${rootDir}/llama.cpp/include",
+                    "-I${rootDir}/llama.cpp"
+                )
                 extraOpts("-libraryPath", libPath)
                 tasks.named(interopProcessingTaskName).configure { dependsOn(mergeTask) }
             }
