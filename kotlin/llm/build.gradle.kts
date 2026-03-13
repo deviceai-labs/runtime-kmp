@@ -108,7 +108,7 @@ kotlin {
         ) {
             dependsOn(buildTaskName)
             environment("PATH", "/opt/homebrew/bin:" + System.getenv("PATH"))
-            commandLine = listOf(cmakePath, "--build", cmakeBuildDir.absolutePath, "--target", "llm_static", "--verbose")
+            commandLine = listOf(cmakePath, "--build", cmakeBuildDir.absolutePath, "--target", "llm_static", "llama", "--verbose")
         }
 
         val libPath = cmakeBuildDir.absolutePath

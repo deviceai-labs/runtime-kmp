@@ -20,6 +20,7 @@ set(LLAMA_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER   OFF CACHE BOOL "" FORCE)
 set(GGML_METAL           ON  CACHE BOOL "" FORCE)  # Metal acceleration on iOS
+set(BUILD_SHARED_LIBS    OFF CACHE BOOL "" FORCE)  # Static libs for embedding
 
 if(EXISTS ${LLAMA_DIR}/CMakeLists.txt)
     add_subdirectory(${LLAMA_DIR} llama-build EXCLUDE_FROM_ALL)
