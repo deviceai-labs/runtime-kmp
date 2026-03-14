@@ -23,6 +23,8 @@
 #include <tuple>
 #include <atomic>
 #include <mutex>
+#include <functional>
+#include <cmath>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
@@ -78,7 +80,8 @@ static std::atomic<bool>  g_stt_no_context{true};
 static SherpaOnnxOfflineTts    *g_tts            = nullptr;
 static std::mutex               g_tts_mutex;
 static std::atomic<bool>        g_tts_cancel{false};
-static std::atomic<int>         g_tts_sample_rate{22050};
+// g_tts_sample_rate intentionally omitted: the sample rate is determined by
+// the voice model, not the caller. Read from audio->sample_rate at synthesis time.
 static std::atomic<int>         g_tts_speaker_id{0};
 
 // ─── VAD global state ─────────────────────────────────────────────────────────
@@ -146,19 +149,35 @@ static bool read_wav_file(
         if (!file) break;
 
         if (std::strncmp(chunk_id, "fmt ", 4) == 0) {
+            if (chunk_size < 8) {
+                STT_LOGE("Malformed fmt chunk (size=%u): %s", chunk_size, path.c_str());
+                return false;
+            }
             uint16_t audio_format;
             file.read(reinterpret_cast<char *>(&audio_format), 2);
             file.read(reinterpret_cast<char *>(&num_channels), 2);
             uint32_t sr;
             file.read(reinterpret_cast<char *>(&sr), 4);
             sample_rate = static_cast<int>(sr);
+            // chunk_size - 8: safe because we validated chunk_size >= 8 above.
             file.seekg(chunk_size - 8, std::ios::cur);
+
+            if (audio_format != 1) {  // 1 = PCM; others: float(3), ADPCM(2), etc.
+                STT_LOGE("Unsupported WAV format %u (only PCM=1 supported): %s",
+                         audio_format, path.c_str());
+                return false;
+            }
+            if (num_channels == 0 || num_channels > 8) {
+                STT_LOGE("Invalid channel count %u: %s", num_channels, path.c_str());
+                return false;
+            }
 
         } else if (std::strncmp(chunk_id, "data", 4) == 0) {
             std::vector<int16_t> pcm(chunk_size / 2);
             file.read(reinterpret_cast<char *>(pcm.data()), chunk_size);
 
-            // Downmix to mono if stereo, convert int16 → float32
+            // Downmix to mono if stereo, convert int16 → float32.
+            // num_channels >= 1 is guaranteed by the fmt validation above.
             size_t n_frames = pcm.size() / num_channels;
             samples.resize(n_frames);
             for (size_t i = 0; i < n_frames; i++) {
@@ -296,6 +315,10 @@ static bool apply_energy_vad(std::vector<float> &audio) {
  */
 static bool apply_vad(std::vector<float> &audio) {
 #ifdef HAVE_SHERPA_ONNX
+    // Lock g_vad_mutex to guard against concurrent dai_vad_init/shutdown on
+    // another thread. Lock order is always g_stt_mutex -> g_vad_mutex (the
+    // public dai_vad_* APIs never acquire g_stt_mutex), so no deadlock risk.
+    std::lock_guard<std::mutex> vad_lock(g_vad_mutex);
     if (g_vad) {
         float before_sec = static_cast<float>(audio.size()) / WHISPER_SAMPLE_RATE;
 
@@ -585,6 +608,7 @@ int dai_stt_init(
 }
 
 char *dai_stt_transcribe(const float *samples, int n_samples) {
+    if (!samples || n_samples <= 0) return strdup_c("");
     std::lock_guard<std::mutex> lock(g_stt_mutex);
     std::vector<float> audio(samples, samples + n_samples);
     std::string text = run_transcription(audio, nullptr, nullptr);
@@ -592,6 +616,7 @@ char *dai_stt_transcribe(const float *samples, int n_samples) {
 }
 
 char *dai_stt_transcribe_file(const char *wav_path) {
+    if (!wav_path || !wav_path[0]) return strdup_c("");
     std::lock_guard<std::mutex> lock(g_stt_mutex);
 
     std::vector<float> samples;
@@ -606,10 +631,10 @@ char *dai_stt_transcribe_file(const char *wav_path) {
 }
 
 char *dai_stt_transcribe_file_detailed(const char *wav_path) {
-    std::lock_guard<std::mutex> lock(g_stt_mutex);
-
     static const char *EMPTY_JSON =
         "{\"text\":\"\",\"language\":\"en\",\"durationMs\":0,\"segments\":[]}";
+    if (!wav_path || !wav_path[0]) return strdup_c(EMPTY_JSON);
+    std::lock_guard<std::mutex> lock(g_stt_mutex);
 
     std::vector<float> samples;
     int sample_rate = 0;
@@ -634,7 +659,17 @@ void dai_stt_transcribe_stream(
     dai_stt_error_cb    on_error,
     void               *user_data
 ) {
-    std::lock_guard<std::mutex> lock(g_stt_mutex);
+    if (!samples || n_samples <= 0) {
+        if (on_error) on_error("Invalid audio input", user_data);
+        return;
+    }
+
+    // Use unique_lock so we can release the mutex before firing the final
+    // callback. Firing on_final while holding g_stt_mutex would deadlock if
+    // the callback calls any STT API (e.g. shutdownStt) that re-acquires it.
+    // Note: on_partial is fired inside run_transcription while the mutex is
+    // still held. on_partial callbacks must NOT re-enter the STT API.
+    std::unique_lock<std::mutex> lock(g_stt_mutex);
 
     if (!g_stt_ctx) {
         if (on_error) on_error("STT not initialized", user_data);
@@ -652,14 +687,18 @@ void dai_stt_transcribe_stream(
         }
     );
 
-    if (g_stt_cancel.load()) {
-        if (on_error) on_error("Cancelled", user_data);
-        return;
-    }
-
+    bool cancelled = g_stt_cancel.load();
     int64_t duration_ms = static_cast<int64_t>(n_samples) * 1000 / WHISPER_SAMPLE_RATE;
-    std::string json = build_result_json(text, segs, g_stt_language, duration_ms);
-    if (on_final) on_final(json.c_str(), user_data);
+    std::string json = cancelled ? "" : build_result_json(text, segs, g_stt_language, duration_ms);
+
+    // Release mutex before invoking external callbacks.
+    lock.unlock();
+
+    if (cancelled) {
+        if (on_error) on_error("Cancelled", user_data);
+    } else {
+        if (on_final) on_final(json.c_str(), user_data);
+    }
 }
 
 void dai_stt_cancel(void) {
@@ -702,8 +741,10 @@ int dai_tts_init(
 
     if (g_tts) { SherpaOnnxDestroyOfflineTts(g_tts); g_tts = nullptr; }
 
-    g_tts_sample_rate = sample_rate;
     g_tts_speaker_id  = speaker_id;
+    // sample_rate is informational only — the model determines actual output rate.
+    // sentence_silence has no corresponding field in the sherpa-onnx C API.
+    (void)sample_rate;
 
     float length_scale = (speech_rate > 0.0f) ? 1.0f / speech_rate : 1.0f;
     bool  is_kokoro    = voices_path && voices_path[0] != '\0';
@@ -733,9 +774,7 @@ int dai_tts_init(
     memset(&cfg, 0, sizeof(cfg));
     cfg.model             = model_cfg;
     cfg.max_num_sentences = 2;
-    // Note: sentence_silence is model-dependent; stored but not directly
-    // configurable in the sherpa-onnx C API — handled internally by the voice model.
-    (void)sentence_silence;
+    (void)sentence_silence; // sherpa-onnx C API has no sentence_silence field
 
     g_tts = SherpaOnnxCreateOfflineTts(&cfg);
     if (!g_tts) {
@@ -749,6 +788,8 @@ int dai_tts_init(
 }
 
 int16_t *dai_tts_synthesize(const char *text, int *out_length) {
+    if (!out_length) return nullptr;
+    if (!text || !text[0]) { *out_length = 0; return nullptr; }
     std::lock_guard<std::mutex> lock(g_tts_mutex);
     if (!g_tts) { TTS_LOGE("Not initialized"); *out_length = 0; return nullptr; }
 
