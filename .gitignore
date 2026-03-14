@@ -52,5 +52,11 @@ CustomImpl.md
 .kotlin/
 .cxx/
 
-# Unregistered native submodule clones (use git submodule add if intentional)
+# Removed submodule directories (kept locally for reference, not tracked)
 llama.cpp/
+espeak-ng/
+piper/
+
+# Internal docs / scratch files at repo root
+whisper_coreml_runtime_explained.md
+whisper_coreml_runtime_explained.pdf
