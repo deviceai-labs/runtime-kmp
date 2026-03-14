@@ -65,10 +65,10 @@ extern "C" {
 JNIEXPORT jboolean JNICALL
 Java_dev_deviceai_llm_engine_LlmJniEngine_nativeInit(
     JNIEnv *env, jobject,
-    jstring jModelPath, jint contextSize, jint maxThreads, jboolean useGpu
+    jstring jModelPath, jint contextSize, jint maxThreads, jint nGpuLayers
 ) {
     std::string path = jstring_to_std(env, jModelPath);
-    return dai_llm_init(path.c_str(), (int)contextSize, (int)maxThreads, (int)useGpu)
+    return dai_llm_init(path.c_str(), (int)contextSize, (int)maxThreads, (int)nGpuLayers)
            ? JNI_TRUE : JNI_FALSE;
 }
 

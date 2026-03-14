@@ -21,7 +21,7 @@ import kotlin.time.measureTime
 actual object LlmBridge {
 
     actual fun initLlm(modelPath: String, config: LlmInitConfig): Boolean =
-        dai_llm_init(modelPath, config.contextSize, config.maxThreads, if (config.useGpu) 1 else 0) != 0
+        dai_llm_init(modelPath, config.contextSize, config.maxThreads, config.nGpuLayers) != 0
 
     actual fun shutdown() = dai_llm_shutdown()
 

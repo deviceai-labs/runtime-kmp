@@ -19,6 +19,8 @@
 #include <vector>
 #include <atomic>
 #include <functional>
+#include <mutex>
+#include <algorithm>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
@@ -46,6 +48,7 @@
 static llama_model   *g_model   = nullptr;
 static llama_context *g_ctx     = nullptr;
 static std::atomic<bool> g_cancel{false};
+static std::mutex g_llm_mutex;
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -88,9 +91,10 @@ static llama_sampler *build_sampler(
  * invalidates existing .c_str() pointers stored in msgs[], causing UB.
  */
 static std::string build_prompt(
-    const char **roles,
-    const char **contents,
-    int          count
+    const char  **roles,
+    const char  **contents,
+    int           count,
+    std::string  *err_out = nullptr
 ) {
     if (!g_model || count <= 0) return "";
 
@@ -109,7 +113,10 @@ static std::string build_prompt(
 
     const char *tmpl = llama_model_chat_template(g_model, nullptr);
     int32_t sz = llama_chat_apply_template(tmpl, msgs.data(), msgs.size(), true, nullptr, 0);
-    if (sz <= 0) return "";
+    if (sz <= 0) {
+        if (err_out) *err_out = "chat template failed (unsupported model format?)";
+        return "";
+    }
 
     std::string out(sz, '\0');
     llama_chat_apply_template(tmpl, msgs.data(), msgs.size(), true, out.data(), sz);
@@ -124,13 +131,14 @@ static std::string build_prompt(
  * KV-cache is cleared at the start of each call for stateless behaviour.
  */
 static std::string do_generate(
-    const std::string                        &prompt,
-    int                                       max_tokens,
-    float                                     temperature,
-    float                                     top_p,
-    int                                       top_k,
-    float                                     repeat_penalty,
-    std::function<bool(const std::string &)>  on_token
+    const std::string                           &prompt,
+    int                                          max_tokens,
+    float                                        temperature,
+    float                                        top_p,
+    int                                          top_k,
+    float                                        repeat_penalty,
+    std::function<bool(const std::string &)>     on_token,
+    std::function<void(const std::string &)>     on_error = nullptr
 ) {
     if (!g_model || !g_ctx) return "";
 
@@ -153,7 +161,9 @@ static std::string do_generate(
         /*parse_special=*/true
     );
     if (n_tokens < 0) {
-        DAI_LOGE("Tokenization failed (prompt too long?)");
+        const char *msg = "Tokenization failed (prompt too long?)";
+        DAI_LOGE("%s", msg);
+        if (on_error) on_error(msg);
         return "";
     }
     tokens.resize(n_tokens);
@@ -161,7 +171,9 @@ static std::string do_generate(
     // Decode full prompt in one batch
     llama_batch batch = llama_batch_get_one(tokens.data(), (int)tokens.size());
     if (llama_decode(g_ctx, batch)) {
-        DAI_LOGE("Prompt decode failed");
+        const char *msg = "Prompt decode failed";
+        DAI_LOGE("%s", msg);
+        if (on_error) on_error(msg);
         return "";
     }
 
@@ -170,6 +182,7 @@ static std::string do_generate(
     std::string result;
     char        piece_buf[256];
     int         n_generated = 0;
+    bool        had_error   = false;
 
     while (n_generated < max_tokens && !g_cancel.load()) {
         llama_token token = llama_sampler_sample(sampler, g_ctx, -1);
@@ -177,10 +190,30 @@ static std::string do_generate(
 
         if (llama_vocab_is_eog(vocab, token)) break;
 
+        // Decode token to text piece; retry with dynamic buffer if buf[256] too small
         int n = llama_token_to_piece(vocab, token, piece_buf, sizeof(piece_buf), 0, true);
-        if (n < 0) break;
+        std::string piece;
+        if (n > 0) {
+            piece.assign(piece_buf, n);
+        } else if (n < 0) {
+            // llama_token_to_piece returns the negative of the required size
+            int needed = -n;
+            piece.resize(needed);
+            n = llama_token_to_piece(vocab, token, piece.data(), needed, 0, true);
+            if (n < 0) {
+                // Should never happen after exact-size retry
+                const char *msg = "token_to_piece failed after retry";
+                DAI_LOGE("%s (token=%d)", msg, token);
+                if (on_error) on_error(msg);
+                had_error = true;
+                break;
+            }
+            piece.resize(n);
+        } else {
+            // n == 0: empty piece (e.g. special token mapped to "") — skip silently
+            continue;
+        }
 
-        std::string piece(piece_buf, n);
         result += piece;
         n_generated++;
 
@@ -188,11 +221,17 @@ static std::string do_generate(
 
         // Decode the newly generated token
         llama_batch next = llama_batch_get_one(&token, 1);
-        if (llama_decode(g_ctx, next)) break;
+        if (llama_decode(g_ctx, next)) {
+            const char *msg = "Token decode failed mid-generation";
+            DAI_LOGE("%s", msg);
+            if (on_error) on_error(msg);
+            had_error = true;
+            break;
+        }
     }
 
     llama_sampler_free(sampler);
-    DAI_LOGD("Generated %d tokens", n_generated);
+    if (!had_error) DAI_LOGD("Generated %d tokens", n_generated);
     return result;
 }
 
@@ -204,12 +243,22 @@ int dai_llm_init(
     const char *model_path,
     int         context_size,
     int         max_threads,
-    int         use_gpu
+    int         n_gpu_layers
 ) {
+    if (!model_path || !model_path[0]) {
+        DAI_LOGE("dai_llm_init: model_path is null or empty");
+        return 0;
+    }
+    context_size  = std::max(64,  context_size);
+    max_threads   = std::max(1,   max_threads);
+    n_gpu_layers  = std::max(0,   n_gpu_layers);
+
+    std::lock_guard<std::mutex> lock(g_llm_mutex);
     cleanup();
+    g_cancel = false;
 
     llama_model_params mparams = llama_model_default_params();
-    mparams.n_gpu_layers = use_gpu ? 99 : 0;
+    mparams.n_gpu_layers = n_gpu_layers;
 
     g_model = llama_model_load_from_file(model_path, mparams);
     if (!g_model) {
@@ -229,12 +278,13 @@ int dai_llm_init(
         return 0;
     }
 
-    DAI_LOGI("Initialized: %s (ctx=%d threads=%d gpu=%d)",
-             model_path, context_size, max_threads, use_gpu);
+    DAI_LOGI("Initialized: %s (ctx=%d threads=%d gpu_layers=%d)",
+             model_path, context_size, max_threads, n_gpu_layers);
     return 1;
 }
 
 void dai_llm_shutdown(void) {
+    std::lock_guard<std::mutex> lock(g_llm_mutex);
     cleanup();
     DAI_LOGI("Shutdown complete");
 }
@@ -249,8 +299,23 @@ char *dai_llm_generate(
     int          top_k,
     float        repeat_penalty
 ) {
+    if (!roles || !contents || message_count <= 0) return nullptr;
+    max_tokens    = std::max(1,    max_tokens);
+    temperature   = std::max(0.0f, temperature);
+    top_p         = std::max(0.0f, std::min(1.0f, top_p));
+    top_k         = std::max(1,    top_k);
+    repeat_penalty = std::max(0.0f, repeat_penalty);
+
+    std::lock_guard<std::mutex> lock(g_llm_mutex);
     g_cancel = false;
-    std::string prompt = build_prompt(roles, contents, message_count);
+
+    std::string err;
+    std::string prompt = build_prompt(roles, contents, message_count, &err);
+    if (prompt.empty()) {
+        DAI_LOGE("build_prompt failed: %s", err.empty() ? "no messages" : err.c_str());
+        return nullptr;
+    }
+
     std::string result = do_generate(
         prompt, max_tokens, temperature, top_p, top_k, repeat_penalty,
         [](const std::string &) { return true; }
@@ -274,18 +339,39 @@ void dai_llm_generate_stream(
     dai_llm_error_cb on_error,
     void            *user_data
 ) {
+    if (!roles || !contents || message_count <= 0) {
+        if (on_error) on_error("No messages provided", user_data);
+        return;
+    }
+    max_tokens    = std::max(1,    max_tokens);
+    temperature   = std::max(0.0f, temperature);
+    top_p         = std::max(0.0f, std::min(1.0f, top_p));
+    top_k         = std::max(1,    top_k);
+    repeat_penalty = std::max(0.0f, repeat_penalty);
+
+    std::lock_guard<std::mutex> lock(g_llm_mutex);
     g_cancel = false;
-    std::string prompt = build_prompt(roles, contents, message_count);
+
+    std::string err;
+    std::string prompt = build_prompt(roles, contents, message_count, &err);
+    if (prompt.empty()) {
+        const std::string msg = err.empty() ? "no messages" : err;
+        DAI_LOGE("build_prompt failed: %s", msg.c_str());
+        if (on_error) on_error(msg.c_str(), user_data);
+        return;
+    }
 
     do_generate(
         prompt, max_tokens, temperature, top_p, top_k, repeat_penalty,
         [&](const std::string &piece) -> bool {
             if (on_token) on_token(piece.c_str(), user_data);
             return !g_cancel.load();
+        },
+        [&](const std::string &error) {
+            if (on_error) on_error(error.c_str(), user_data);
         }
     );
     // Stream completes when this function returns — no on_complete needed.
-    (void)on_error; // reserved for future error propagation during streaming
 }
 
 void dai_llm_cancel(void) {

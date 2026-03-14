@@ -5,10 +5,12 @@ package dev.deviceai.llm
  *
  * @param contextSize Maximum context window in tokens (default 2048)
  * @param maxThreads CPU threads for inference (default 4)
- * @param useGpu Use GPU acceleration — Metal on iOS, Vulkan on Android (default true)
+ * @param nGpuLayers Number of model layers to offload to GPU.
+ *   0 = CPU-only; 99 (default) = offload all layers — llama.cpp clamps to
+ *   the actual layer count, so 99 is safe for any model size.
  */
 data class LlmInitConfig(
     val contextSize: Int = 2048,
     val maxThreads: Int = 4,
-    val useGpu: Boolean = true
+    val nGpuLayers: Int = 99
 )

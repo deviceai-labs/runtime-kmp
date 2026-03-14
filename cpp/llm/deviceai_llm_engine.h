@@ -40,14 +40,16 @@ typedef void (*dai_llm_error_cb)(const char *error, void *user_data);
  * @param model_path   Absolute path to the .gguf file
  * @param context_size KV-cache context window in tokens (e.g. 4096)
  * @param max_threads  CPU threads for inference
- * @param use_gpu      1 = use GPU (Metal on iOS, OpenCL/Vulkan on Android); 0 = CPU only
+ * @param n_gpu_layers Number of transformer layers to offload to GPU.
+ *                     0 = CPU only; 99 (or any large value) = all layers on GPU
+ *                     (llama.cpp clamps to the actual model layer count automatically).
  * @return 1 on success, 0 on failure
  */
 int dai_llm_init(
     const char *model_path,
     int         context_size,
     int         max_threads,
-    int         use_gpu
+    int         n_gpu_layers
 );
 
 /**
