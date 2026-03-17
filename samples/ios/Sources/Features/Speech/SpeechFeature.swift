@@ -6,6 +6,8 @@ struct SpeechFeature {
 
     @ObservableState
     struct State: Equatable {
+        /// Set by MainFeature when the user selects an STT model in the Models sheet.
+        var modelPath: String? = nil
         var isRecording: Bool = false
         var isTranscribing: Bool = false
         var transcript: String = ""
@@ -23,7 +25,7 @@ struct SpeechFeature {
     enum Action {
         case recordButtonTapped
         case recordingStarted
-        case recordingStopped([Float])      // PCM samples
+        case recordingStopped([Float])
         case transcriptionSucceeded(TranscriptionResult)
         case transcriptionFailed(String)
         case clearTapped
@@ -36,6 +38,10 @@ struct SpeechFeature {
             switch action {
 
             case .recordButtonTapped:
+                guard let modelPath = state.modelPath else {
+                    state.errorMessage = "No STT model selected. Tap the \u{24B8} icon to download one."
+                    return .none
+                }
                 if state.isRecording {
                     state.isRecording = false
                     return .run { send in
@@ -55,11 +61,11 @@ struct SpeechFeature {
                 return .none
 
             case .recordingStopped(let samples):
-                guard !samples.isEmpty else { return .none }
+                guard !samples.isEmpty, let modelPath = state.modelPath else { return .none }
                 state.isTranscribing = true
-                return .run { send in
+                return .run { [modelPath] send in
                     do {
-                        let result = try await speechClient.transcribe(samples)
+                        let result = try await speechClient.transcribe(samples, modelPath)
                         await send(.transcriptionSucceeded(result))
                     } catch {
                         await send(.transcriptionFailed(error.localizedDescription))
@@ -80,9 +86,9 @@ struct SpeechFeature {
                 return .none
 
             case .clearTapped:
-                state.transcript    = ""
-                state.segments      = []
-                state.errorMessage  = nil
+                state.transcript   = ""
+                state.segments     = []
+                state.errorMessage = nil
                 return .none
             }
         }

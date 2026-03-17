@@ -5,10 +5,12 @@ struct ChatView: View {
     @Bindable var store: StoreOf<ChatFeature>
 
     var body: some View {
-        VStack(spacing: 0) {
-            messageList
-            Divider()
-            inputBar
+        Group {
+            if store.modelPath == nil {
+                noModelView
+            } else {
+                mainContent
+            }
         }
         .background(AppTheme.backgroundGradient.ignoresSafeArea())
         .navigationTitle("Chat")
@@ -18,6 +20,30 @@ struct ChatView: View {
                 Button("Clear") { store.send(.clearTapped) }
                     .disabled(store.messages.isEmpty && !store.isGenerating)
             }
+        }
+    }
+
+    private var noModelView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "cpu")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text("No LLM model selected")
+                .font(.headline)
+            Text("Tap the \u{24B8} icon above to download a model for on-device chat.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(40)
+    }
+
+    private var mainContent: some View {
+        VStack(spacing: 0) {
+            messageList
+            Divider()
+            inputBar
         }
     }
 

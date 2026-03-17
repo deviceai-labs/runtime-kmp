@@ -6,6 +6,8 @@ struct ChatFeature {
 
     @ObservableState
     struct State: Equatable {
+        /// Set by MainFeature when the user selects an LLM model in the Models sheet.
+        var modelPath: String? = nil
         var messages: [ChatMessage] = []
         var inputText: String = ""
         var isGenerating: Bool = false
@@ -34,16 +36,20 @@ struct ChatFeature {
             case .sendTapped:
                 let text = state.inputText.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !text.isEmpty, !state.isGenerating else { return .none }
+                guard let modelPath = state.modelPath else {
+                    state.errorMessage = "No LLM model selected. Tap the \u{24B8} icon to download one."
+                    return .none
+                }
 
                 state.messages.append(ChatMessage(role: .user, text: text))
-                state.inputText    = ""
-                state.isGenerating = true
+                state.inputText     = ""
+                state.isGenerating  = true
                 state.streamingText = ""
                 state.errorMessage  = nil
 
-                return .run { send in
+                return .run { [modelPath] send in
                     do {
-                        for try await token in await chatClient.send(text) {
+                        for try await token in await chatClient.send(text, modelPath) {
                             await send(.tokenReceived(token))
                         }
                         await send(.generationFinished)

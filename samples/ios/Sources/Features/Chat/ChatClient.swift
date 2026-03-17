@@ -4,31 +4,27 @@ import DeviceAiLlm
 // MARK: - Dependency
 
 struct ChatClient: Sendable {
-    var send:   @Sendable (String) async -> AsyncThrowingStream<String, Error>
+    /// Send `text` to the model at `modelPath`; returns a token stream.
+    var send:   @Sendable (String, String) async -> AsyncThrowingStream<String, Error>
     var cancel: @Sendable () async -> Void
     var clear:  @Sendable () async -> Void
 }
 
 extension ChatClient: DependencyKey {
     static let liveValue: ChatClient = {
-        // Session is created once and reused across sends.
-        let session = DeviceAI.llm.chat(
-            modelPath: LlmCatalog.smolLM2_135M.localPathString
-        ) {
-            $0.systemPrompt = "You are a helpful on-device AI assistant. Be concise."
-            $0.maxTokens    = 512
-            $0.temperature  = 0.7
-        }
+        let sessionCache = ChatSessionCache()
 
         return ChatClient(
-            send:   { text in await session.send(text) },
-            cancel: { session.cancel() },
-            clear:  { await session.clearHistory() }
+            send: { text, modelPath in
+                await sessionCache.send(text, modelPath: modelPath)
+            },
+            cancel: { await sessionCache.cancel() },
+            clear:  { await sessionCache.clearHistory() }
         )
     }()
 
     static let previewValue = ChatClient(
-        send: { text in
+        send: { text, _ in
             AsyncThrowingStream { c in
                 Task {
                     let words = "I'm a preview response for: \(text)".split(separator: " ")
@@ -52,11 +48,45 @@ extension DependencyValues {
     }
 }
 
-// MARK: - Helpers
+// MARK: - Session cache (re-creates session when model changes)
 
-private extension LlmModelInfo {
-    /// Convenience — path as String for ChatSession init.
-    var localPathString: String {
-        DeviceAI.llm.modelManager.localPath(for: self).path
+private actor ChatSessionCache {
+    private var session: ChatSession?
+    private var currentPath: String?
+
+    private func getSession(for path: String) -> ChatSession {
+        if currentPath == path, let s = session { return s }
+        let s = DeviceAI.llm.chat(modelPath: path) {
+            $0.systemPrompt = "You are a helpful on-device AI assistant. Be concise."
+            $0.maxTokens    = 512
+            $0.temperature  = 0.7
+        }
+        session     = s
+        currentPath = path
+        return s
+    }
+
+    func send(_ text: String, modelPath: String) -> AsyncThrowingStream<String, Error> {
+        let s = getSession(for: modelPath)
+        return AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    for try await token in await s.send(text) {
+                        continuation.yield(token)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    func cancel() {
+        session?.cancel()
+    }
+
+    func clearHistory() async {
+        await session?.clearHistory()
     }
 }

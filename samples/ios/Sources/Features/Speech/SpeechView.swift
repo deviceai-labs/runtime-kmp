@@ -5,12 +5,13 @@ struct SpeechView: View {
     let store: StoreOf<SpeechFeature>
 
     var body: some View {
-        VStack(spacing: 24) {
-            transcriptArea
-            Spacer()
-            recordButton
+        Group {
+            if store.modelPath == nil {
+                noModelView
+            } else {
+                mainContent
+            }
         }
-        .padding(24)
         .background(AppTheme.backgroundGradient.ignoresSafeArea())
         .navigationTitle("Transcribe")
         .navigationBarTitleDisplayMode(.inline)
@@ -20,6 +21,31 @@ struct SpeechView: View {
                     .disabled(store.transcript.isEmpty && store.errorMessage == nil)
             }
         }
+    }
+
+    private var noModelView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "cpu")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text("No STT model selected")
+                .font(.headline)
+            Text("Tap the \u{24B8} icon above to download a Whisper model.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(40)
+    }
+
+    private var mainContent: some View {
+        VStack(spacing: 24) {
+            transcriptArea
+            Spacer()
+            recordButton
+        }
+        .padding(24)
     }
 
     // MARK: - Transcript area

@@ -44,4 +44,7 @@ public final class LLMModule: Sendable {
         configure?(config)
         return ChatSession(modelPath: modelPath, config: config)
     }
+
+    /// Typed model manager for LLM (GGUF) models.
+    public var modelManager: LlmModelManager { .shared }
 }

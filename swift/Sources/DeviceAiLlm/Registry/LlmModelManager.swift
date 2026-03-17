@@ -13,6 +13,8 @@ import DeviceAiCore
 /// ```
 public final class LlmModelManager: Sendable {
 
+    static let shared = LlmModelManager()
+
     private let inner: ModelManager<LlmModelInfo>
 
     public init(
