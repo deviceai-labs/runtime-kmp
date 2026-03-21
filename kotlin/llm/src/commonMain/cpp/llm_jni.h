@@ -15,7 +15,6 @@ JNIEXPORT jboolean JNICALL
 Java_dev_deviceai_llm_engine_LlmJniEngine_nativeInit(
     JNIEnv *env, jobject obj,
     jstring modelPath,
-    jint contextSize,
     jint maxThreads,
     jboolean useGpu
 );

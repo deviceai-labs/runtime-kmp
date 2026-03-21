@@ -185,7 +185,7 @@ extern "C" {
 JNIEXPORT jboolean JNICALL
 Java_dev_deviceai_llm_engine_LlmJniEngine_nativeInit(
     JNIEnv *env, jobject, jstring jModelPath,
-    jint contextSize, jint maxThreads, jboolean useGpu
+    jint maxThreads, jboolean useGpu
 ) {
     cleanup();
 
@@ -201,7 +201,8 @@ Java_dev_deviceai_llm_engine_LlmJniEngine_nativeInit(
     }
 
     llama_context_params cparams = llama_context_default_params();
-    cparams.n_ctx    = contextSize;
+    // n_ctx = 0 → llama.cpp uses the model's native context size from GGUF metadata
+    cparams.n_ctx     = 0;
     cparams.n_threads = maxThreads;
 
     g_ctx = llama_init_from_model(g_model, cparams);
@@ -213,7 +214,7 @@ Java_dev_deviceai_llm_engine_LlmJniEngine_nativeInit(
     }
 
     LOGI("LLM initialized: %s (ctx=%d, threads=%d, gpu=%d)",
-         modelPath.c_str(), contextSize, maxThreads, (bool)useGpu);
+         modelPath.c_str(), llama_n_ctx(g_ctx), maxThreads, (bool)useGpu);
     return JNI_TRUE;
 }
 

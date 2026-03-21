@@ -15,13 +15,15 @@ extern "C" {
 /**
  * Initialize the LLM engine with a GGUF model file.
  *
+ * Context window size is not exposed — llama.cpp reads it from the model's
+ * GGUF metadata and uses the model's native context length (n_ctx = 0).
+ *
  * @param model_path Absolute path to .gguf model file
- * @param context_size Maximum context window in tokens
  * @param max_threads CPU threads for inference
  * @param use_gpu Use GPU acceleration (Metal on iOS)
  * @return true if initialization succeeded
  */
-bool llm_init(const char *model_path, int context_size, int max_threads, bool use_gpu);
+bool llm_init(const char *model_path, int max_threads, bool use_gpu);
 
 /**
  * Release all LLM resources and unload the model.

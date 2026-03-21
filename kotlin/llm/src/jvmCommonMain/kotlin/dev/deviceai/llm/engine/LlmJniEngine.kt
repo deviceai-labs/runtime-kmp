@@ -23,7 +23,7 @@ internal object LlmJniEngine : LlmEngine {
     }
 
     override fun init(modelPath: String, config: LlmInitConfig): Boolean =
-        nativeInit(modelPath, config.contextSize, config.maxThreads, config.useGpu)
+        nativeInit(modelPath, config.maxThreads, config.useGpu)
 
     override fun shutdown() = nativeShutdown()
 
@@ -69,7 +69,7 @@ internal object LlmJniEngine : LlmEngine {
     // ──────────────────────────────────────────────────────────────
 
     private external fun nativeInit(
-        modelPath: String, contextSize: Int, maxThreads: Int, useGpu: Boolean
+        modelPath: String, maxThreads: Int, useGpu: Boolean
     ): Boolean
 
     private external fun nativeShutdown()
