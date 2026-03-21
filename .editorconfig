@@ -1,0 +1,38 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+# ktlint rules
+ktlint_standard = enabled
+ktlint_code_style = intellij_idea
+ktlint_standard_no-wildcard-imports = enabled
+ktlint_standard_import-ordering = enabled
+
+# Allow wildcard imports for Ktor DSL packages — expanding these to explicit
+# imports would add ~15-20 imports per file with no readability benefit.
+ij_kotlin_packages_to_use_import_on_demand = io.ktor.client,io.ktor.client.call,io.ktor.client.request,io.ktor.client.statement,io.ktor.client.plugins.contentnegotiation,io.ktor.http,io.ktor.serialization.kotlinx.json,io.ktor.utils.io,kotlinx.serialization.json
+
+[*.{cpp,cc,c,h,hpp}]
+indent_style = space
+indent_size = 4
+max_line_length = 100
+
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.{json,toml}]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab

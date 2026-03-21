@@ -20,7 +20,7 @@ data class LlmModelInfo(
     val sizeBytes: Long,
     val quantization: String,
     val parameters: String,
-    val description: String
+    val description: String,
 )
 
 /**
@@ -30,8 +30,4 @@ data class LlmModelInfo(
  * @param modelPath Absolute path to the .gguf file on disk
  * @param sizeBytes File size in bytes
  */
-data class LocalLlmModel(
-    val id: String,
-    val modelPath: String,
-    val sizeBytes: Long
-)
+data class LocalLlmModel(val id: String, val modelPath: String, val sizeBytes: Long)

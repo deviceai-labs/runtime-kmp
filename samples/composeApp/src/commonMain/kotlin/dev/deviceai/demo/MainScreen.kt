@@ -23,7 +23,6 @@ import cafe.adriel.voyager.core.screen.Screen
 import org.koin.compose.koinInject
 
 class MainScreen : Screen {
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -37,13 +36,14 @@ class MainScreen : Screen {
                     title = {
                         Text(
                             text = if (selectedTab == 0) "Transcribe" else "Chat",
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.titleLarge,
                         )
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
+                    colors =
+                    TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground
-                    )
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    ),
                 )
             },
             bottomBar = {
@@ -54,10 +54,10 @@ class MainScreen : Screen {
                         icon = {
                             Icon(
                                 imageVector = if (selectedTab == 0) Icons.Default.Mic else Icons.Default.MicNone,
-                                contentDescription = "Speech"
+                                contentDescription = "Speech",
                             )
                         },
-                        label = { Text("Speech") }
+                        label = { Text("Speech") },
                     )
                     NavigationBarItem(
                         selected = selectedTab == 1,
@@ -65,14 +65,14 @@ class MainScreen : Screen {
                         icon = {
                             Icon(
                                 imageVector = Icons.Default.SmartToy,
-                                contentDescription = "Chat"
+                                contentDescription = "Chat",
                             )
                         },
-                        label = { Text("Chat") }
+                        label = { Text("Chat") },
                     )
                 }
             },
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background,
         ) { padding ->
             when (selectedTab) {
                 0 -> SpeechTabContent(speechVm, padding)

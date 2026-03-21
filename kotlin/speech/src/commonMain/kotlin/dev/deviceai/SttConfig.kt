@@ -9,27 +9,22 @@ data class SttConfig(
      * Use "auto" for automatic language detection.
      */
     val language: String = "en",
-
     /**
      * If true, translate non-English speech to English.
      */
     val translateToEnglish: Boolean = false,
-
     /**
      * Number of CPU threads for inference.
      */
     val maxThreads: Int = 4,
-
     /**
      * Use GPU acceleration if available (Metal on iOS/macOS).
      */
     val useGpu: Boolean = true,
-
     /**
      * Enable voice activity detection to skip silence.
      */
     val useVad: Boolean = true,
-
     /**
      * Force output into a single segment, skipping subtitle-style timestamp
      * boundary detection. Set to true for interactive voice commands.
@@ -39,11 +34,10 @@ data class SttConfig(
      * the decoder loops on silence and repeats the transcription.
      */
     val singleSegment: Boolean = true,
-
     /**
      * Do not use the previous transcription as a prompt for the decoder.
      * Set to true for isolated voice commands (each recording is independent).
      * Set to false for continuous transcription of a long audio stream.
      */
-    val noContext: Boolean = true
+    val noContext: Boolean = true,
 )

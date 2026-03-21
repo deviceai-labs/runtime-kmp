@@ -64,37 +64,38 @@ fun SpeechTabContent(viewModel: SpeechViewModel, padding: PaddingValues) {
     }
 
     Column(
-        modifier = Modifier
+        modifier =
+        Modifier
             .fillMaxSize()
             .padding(padding)
             .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier
+            modifier =
+            Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             TranscriptArea(recordingState)
         }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 52.dp)
+            modifier = Modifier.padding(bottom = 52.dp),
         ) {
             StatusLabel(recordingState)
             Spacer(Modifier.height(24.dp))
             MicButton(
                 recordingState = recordingState,
-                onClick = { viewModel.onMicButtonClicked() }
+                onClick = { viewModel.onMicButtonClicked() },
             )
         }
     }
 }
 
 class SpeechScreen : Screen {
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -109,18 +110,19 @@ class SpeechScreen : Screen {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = "Back",
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
+                    colors =
+                    TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    ),
                 )
             },
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background,
         ) { padding ->
             SpeechTabContent(viewModel, padding)
         }
@@ -140,13 +142,13 @@ private fun TranscriptArea(state: RecordingState) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 3.dp
+                    strokeWidth = 3.dp,
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = "Transcribing...",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -159,7 +161,7 @@ private fun TranscriptArea(state: RecordingState) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
     }
@@ -171,7 +173,7 @@ private fun HintText(text: String) {
         text = text,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center
+        textAlign = TextAlign.Center,
     )
 }
 
@@ -179,37 +181,41 @@ private fun HintText(text: String) {
 private fun WaveformBars() {
     val transition = rememberInfiniteTransition(label = "waveform")
     val barCount = 7
-    val heights = (0 until barCount).map { i ->
-        transition.animateFloat(
-            initialValue = 0.2f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 350 + i * 70,
-                    easing = EaseInOut
+    val heights =
+        (0 until barCount).map { i ->
+            transition.animateFloat(
+                initialValue = 0.2f,
+                targetValue = 1f,
+                animationSpec =
+                infiniteRepeatable(
+                    animation =
+                    tween(
+                        durationMillis = 350 + i * 70,
+                        easing = EaseInOut,
+                    ),
+                    repeatMode = RepeatMode.Reverse,
                 ),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "bar$i"
-        )
-    }
+                label = "bar$i",
+            )
+        }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.height(56.dp)
+            modifier = Modifier.height(56.dp),
         ) {
             heights.forEach { heightFraction ->
                 val h by heightFraction
                 Box(
-                    modifier = Modifier
+                    modifier =
+                    Modifier
                         .width(5.dp)
                         .fillMaxHeight(h)
                         .background(
                             MaterialTheme.colorScheme.primary,
-                            RoundedCornerShape(4.dp)
-                        )
+                            RoundedCornerShape(4.dp),
+                        ),
                 )
             }
         }
@@ -217,7 +223,7 @@ private fun WaveformBars() {
         Text(
             text = "Listening...",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -228,24 +234,25 @@ private fun TranscriptCard(text: String) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 2.dp
+        tonalElevation = 2.dp,
     ) {
         Column(
-            modifier = Modifier
+            modifier =
+            Modifier
                 .padding(24.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
         ) {
             Text(
                 text = "TRANSCRIPTION",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
-                letterSpacing = MaterialTheme.typography.labelSmall.letterSpacing
+                letterSpacing = MaterialTheme.typography.labelSmall.letterSpacing,
             )
             Spacer(Modifier.height(12.dp))
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -255,17 +262,18 @@ private fun TranscriptCard(text: String) {
 
 @Composable
 private fun StatusLabel(state: RecordingState) {
-    val (label, color) = when (state) {
-        is RecordingState.Idle        -> "Ready to record" to MaterialTheme.colorScheme.onSurfaceVariant
-        is RecordingState.Recording   -> "Recording  ·  tap to stop" to MaterialTheme.colorScheme.error
-        is RecordingState.Transcribing -> "Processing audio..." to MaterialTheme.colorScheme.primary
-        is RecordingState.Result      -> "Tap to record again" to MaterialTheme.colorScheme.onSurfaceVariant
-        is RecordingState.Error       -> "Error  ·  tap to retry" to MaterialTheme.colorScheme.error
-    }
+    val (label, color) =
+        when (state) {
+            is RecordingState.Idle -> "Ready to record" to MaterialTheme.colorScheme.onSurfaceVariant
+            is RecordingState.Recording -> "Recording  ·  tap to stop" to MaterialTheme.colorScheme.error
+            is RecordingState.Transcribing -> "Processing audio..." to MaterialTheme.colorScheme.primary
+            is RecordingState.Result -> "Tap to record again" to MaterialTheme.colorScheme.onSurfaceVariant
+            is RecordingState.Error -> "Error  ·  tap to retry" to MaterialTheme.colorScheme.error
+        }
     Text(
         text = label,
         style = MaterialTheme.typography.labelMedium,
-        color = color
+        color = color,
     )
 }
 
@@ -273,7 +281,7 @@ private fun StatusLabel(state: RecordingState) {
 
 @Composable
 private fun MicButton(recordingState: RecordingState, onClick: () -> Unit) {
-    val isRecording    = recordingState is RecordingState.Recording
+    val isRecording = recordingState is RecordingState.Recording
     val isTranscribing = recordingState is RecordingState.Transcribing
 
     Box(contentAlignment = Alignment.Center) {
@@ -283,49 +291,54 @@ private fun MicButton(recordingState: RecordingState, onClick: () -> Unit) {
             val scale by pulse.animateFloat(
                 initialValue = 1f,
                 targetValue = 1.65f,
-                animationSpec = infiniteRepeatable(
+                animationSpec =
+                infiniteRepeatable(
                     animation = tween(900, easing = EaseOut),
-                    repeatMode = RepeatMode.Restart
+                    repeatMode = RepeatMode.Restart,
                 ),
-                label = "pulseScale"
+                label = "pulseScale",
             )
             val alpha by pulse.animateFloat(
                 initialValue = 0.55f,
                 targetValue = 0f,
-                animationSpec = infiniteRepeatable(
+                animationSpec =
+                infiniteRepeatable(
                     animation = tween(900),
-                    repeatMode = RepeatMode.Restart
+                    repeatMode = RepeatMode.Restart,
                 ),
-                label = "pulseAlpha"
+                label = "pulseAlpha",
             )
             Box(
-                modifier = Modifier
+                modifier =
+                Modifier
                     .size(80.dp)
                     .scale(scale)
                     .background(
                         MaterialTheme.colorScheme.error.copy(alpha = alpha),
-                        CircleShape
-                    )
+                        CircleShape,
+                    ),
             )
         }
 
         FloatingActionButton(
             onClick = { if (!isTranscribing) onClick() },
             modifier = Modifier.size(76.dp),
-            containerColor = when {
-                isRecording    -> MaterialTheme.colorScheme.error
+            containerColor =
+            when {
+                isRecording -> MaterialTheme.colorScheme.error
                 isTranscribing -> MaterialTheme.colorScheme.surfaceVariant
-                else           -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.primary
             },
-            contentColor = when {
+            contentColor =
+            when {
                 isTranscribing -> MaterialTheme.colorScheme.onSurfaceVariant
-                else           -> Color.White
-            }
+                else -> Color.White
+            },
         ) {
             Icon(
                 imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
                 contentDescription = if (isRecording) "Stop recording" else "Start recording",
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(34.dp),
             )
         }
     }

@@ -14,24 +14,18 @@ import kotlinx.serialization.json.*
  * Each voice has a .onnx model and .onnx.json config file.
  * Download base: https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/
  */
-internal class PiperCatalog(
-    private val client: HttpClient,
-    private val config: RegistryConfig
-) {
+internal class PiperCatalog(private val client: HttpClient, private val config: RegistryConfig) {
     private val json = Json { ignoreUnknownKeys = true }
 
     private var cachedVoices: List<PiperVoiceInfo>? = null
     private var cacheTimestamp: Long = 0
 
-    suspend fun fetchVoices(
-        language: String? = null,
-        quality: PiperQuality? = null
-    ): List<PiperVoiceInfo> {
+    suspend fun fetchVoices(language: String? = null, quality: PiperQuality? = null): List<PiperVoiceInfo> {
         val allVoices = fetchAllVoices()
 
         return allVoices.filter { voice ->
             (language == null || voice.language.code.startsWith(language, ignoreCase = true)) &&
-            (quality == null || voice.quality == quality)
+                (quality == null || voice.quality == quality)
         }
     }
 
@@ -41,11 +35,12 @@ internal class PiperCatalog(
             if (now - cacheTimestamp < config.catalogCacheDurationMs) return cached
         }
 
-        val voices = try {
-            fetchFromApi()
-        } catch (e: Exception) {
-            loadCachedFromDisk() ?: throw e
-        }
+        val voices =
+            try {
+                fetchFromApi()
+            } catch (e: Exception) {
+                loadCachedFromDisk() ?: throw e
+            }
 
         cachedVoices = voices
         cacheTimestamp = now
@@ -54,9 +49,10 @@ internal class PiperCatalog(
     }
 
     private suspend fun fetchFromApi(): List<PiperVoiceInfo> {
-        val response: HttpResponse = client.get(
-            "${config.huggingFaceBaseUrl}/rhasspy/piper-voices/resolve/main/voices.json"
-        )
+        val response: HttpResponse =
+            client.get(
+                "${config.huggingFaceBaseUrl}/rhasspy/piper-voices/resolve/main/voices.json",
+            )
         val body: String = response.body()
         return parseVoicesJson(body)
     }
@@ -91,14 +87,15 @@ internal class PiperCatalog(
 
                 // Parse language
                 val langObj = obj["language"]?.jsonObject ?: continue
-                val languageInfo = LanguageInfo(
-                    code = langObj["code"]?.jsonPrimitive?.content ?: "",
-                    family = langObj["family"]?.jsonPrimitive?.content ?: "",
-                    region = langObj["region"]?.jsonPrimitive?.content ?: "",
-                    nameNative = langObj["name_native"]?.jsonPrimitive?.content ?: "",
-                    nameEnglish = langObj["name_english"]?.jsonPrimitive?.content ?: "",
-                    countryEnglish = langObj["country_english"]?.jsonPrimitive?.content ?: ""
-                )
+                val languageInfo =
+                    LanguageInfo(
+                        code = langObj["code"]?.jsonPrimitive?.content ?: "",
+                        family = langObj["family"]?.jsonPrimitive?.content ?: "",
+                        region = langObj["region"]?.jsonPrimitive?.content ?: "",
+                        nameNative = langObj["name_native"]?.jsonPrimitive?.content ?: "",
+                        nameEnglish = langObj["name_english"]?.jsonPrimitive?.content ?: "",
+                        countryEnglish = langObj["country_english"]?.jsonPrimitive?.content ?: "",
+                    )
 
                 // Parse quality
                 val qualityStr = obj["quality"]?.jsonPrimitive?.content ?: "medium"
@@ -132,18 +129,19 @@ internal class PiperCatalog(
                 val name = obj["name"]?.jsonPrimitive?.content ?: voiceKey
 
                 // Build display name: "Amy (US English, Low)"
-                val displayName = buildString {
-                    append(name.replaceFirstChar { it.uppercase() })
-                    append(" (")
-                    if (languageInfo.countryEnglish.isNotEmpty()) {
-                        append(languageInfo.countryEnglish)
-                        append(" ")
+                val displayName =
+                    buildString {
+                        append(name.replaceFirstChar { it.uppercase() })
+                        append(" (")
+                        if (languageInfo.countryEnglish.isNotEmpty()) {
+                            append(languageInfo.countryEnglish)
+                            append(" ")
+                        }
+                        append(languageInfo.nameEnglish)
+                        append(", ")
+                        append(qualityStr.replaceFirstChar { it.uppercase() })
+                        append(")")
                     }
-                    append(languageInfo.nameEnglish)
-                    append(", ")
-                    append(qualityStr.replaceFirstChar { it.uppercase() })
-                    append(")")
-                }
 
                 voices.add(
                     PiperVoiceInfo(
@@ -155,8 +153,8 @@ internal class PiperCatalog(
                         numSpeakers = numSpeakers,
                         speakerIdMap = speakerMap,
                         modelUrl = "$downloadBase/$modelPath",
-                        configUrl = "$downloadBase/$configPath"
-                    )
+                        configUrl = "$downloadBase/$configPath",
+                    ),
                 )
             } catch (_: Exception) {
                 // Skip malformed entries
@@ -180,10 +178,11 @@ internal class PiperCatalog(
     private fun saveCacheToDisk(voices: List<PiperVoiceInfo>) {
         PlatformStorage.ensureDirectoryExists(PlatformStorage.getModelsDir())
         val cachePath = "${PlatformStorage.getModelsDir()}/piper_catalog_cache.json"
-        val cached = CachedPiperCatalog(
-            voices = voices.map { CachedPiperVoice.fromVoiceInfo(it) },
-            cachedAt = currentTimeMillis()
-        )
+        val cached =
+            CachedPiperCatalog(
+                voices = voices.map { CachedPiperVoice.fromVoiceInfo(it) },
+                cachedAt = currentTimeMillis(),
+            )
         PlatformStorage.writeText(cachePath, json.encodeToString(CachedPiperCatalog.serializer(), cached))
     }
 
@@ -196,10 +195,7 @@ internal class PiperCatalog(
 }
 
 @Serializable
-private data class CachedPiperCatalog(
-    val voices: List<CachedPiperVoice>,
-    val cachedAt: Long
-)
+private data class CachedPiperCatalog(val voices: List<CachedPiperVoice>, val cachedAt: Long)
 
 @Serializable
 private data class CachedPiperVoice(
@@ -211,7 +207,7 @@ private data class CachedPiperVoice(
     val numSpeakers: Int,
     val speakerIdMap: Map<String, Int>,
     val modelUrl: String,
-    val configUrl: String
+    val configUrl: String,
 ) {
     fun toVoiceInfo() = PiperVoiceInfo(
         id = id,
@@ -222,7 +218,7 @@ private data class CachedPiperVoice(
         numSpeakers = numSpeakers,
         speakerIdMap = speakerIdMap,
         modelUrl = modelUrl,
-        configUrl = configUrl
+        configUrl = configUrl,
     )
 
     companion object {
@@ -235,7 +231,7 @@ private data class CachedPiperVoice(
             numSpeakers = v.numSpeakers,
             speakerIdMap = v.speakerIdMap,
             modelUrl = v.modelUrl,
-            configUrl = v.configUrl
+            configUrl = v.configUrl,
         )
     }
 }

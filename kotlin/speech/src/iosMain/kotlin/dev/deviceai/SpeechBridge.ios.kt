@@ -1,9 +1,45 @@
 package dev.deviceai
 
 import androidx.compose.runtime.Composable
-import dev.deviceai.native.*
-import kotlinx.cinterop.*
-import platform.Foundation.*
+import dev.deviceai.native.speech_free_audio
+import dev.deviceai.native.speech_free_string
+import dev.deviceai.native.speech_shutdown_all
+import dev.deviceai.native.speech_stt_cancel
+import dev.deviceai.native.speech_stt_init
+import dev.deviceai.native.speech_stt_shutdown
+import dev.deviceai.native.speech_stt_transcribe
+import dev.deviceai.native.speech_stt_transcribe_audio
+import dev.deviceai.native.speech_stt_transcribe_detailed
+import dev.deviceai.native.speech_stt_transcribe_stream
+import dev.deviceai.native.speech_tts_cancel
+import dev.deviceai.native.speech_tts_init
+import dev.deviceai.native.speech_tts_shutdown
+import dev.deviceai.native.speech_tts_synthesize
+import dev.deviceai.native.speech_tts_synthesize_stream
+import dev.deviceai.native.speech_tts_synthesize_to_file
+import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.FloatVar
+import kotlinx.cinterop.IntVar
+import kotlinx.cinterop.ShortVar
+import kotlinx.cinterop.StableRef
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.allocArray
+import kotlinx.cinterop.asCPointer
+import kotlinx.cinterop.asStableRef
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.staticCFunction
+import kotlinx.cinterop.toKString
+import kotlinx.cinterop.value
+import platform.Foundation.NSBundle
+import platform.Foundation.NSCachesDirectory
+import platform.Foundation.NSDocumentDirectory
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
+import platform.Foundation.NSUserDomainMask
 
 /**
  * iOS actual implementation of [SpeechBridge] — shared across arm64, x64, and simulatorArm64.
@@ -14,21 +50,18 @@ import platform.Foundation.*
 @Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 @OptIn(ExperimentalForeignApi::class)
 actual object SpeechBridge {
-
     // ══════════════════════════════════════════════════════════════
     //                    SPEECH-TO-TEXT (STT)
     // ══════════════════════════════════════════════════════════════
 
-    actual fun initStt(modelPath: String, config: SttConfig): Boolean {
-        return speech_stt_init(
-            modelPath,
-            config.language,
-            config.translateToEnglish,
-            config.maxThreads,
-            config.useGpu,
-            config.useVad
-        )
-    }
+    actual fun initStt(modelPath: String, config: SttConfig): Boolean = speech_stt_init(
+        modelPath,
+        config.language,
+        config.translateToEnglish,
+        config.maxThreads,
+        config.useGpu,
+        config.useVad,
+    )
 
     actual fun transcribe(audioPath: String): String {
         val result = speech_stt_transcribe(audioPath)
@@ -57,27 +90,33 @@ actual object SpeechBridge {
 
             val ref = StableRef.create(callback)
 
-            val onPartial = staticCFunction { text: CPointer<ByteVar>?, userData: COpaquePointer? ->
-                val cb = userData!!.asStableRef<SttStream>().get()
-                cb.onPartialResult(text?.toKString() ?: "")
-            }
+            val onPartial =
+                staticCFunction { text: CPointer<ByteVar>?, userData: COpaquePointer? ->
+                    val cb = userData!!.asStableRef<SttStream>().get()
+                    cb.onPartialResult(text?.toKString() ?: "")
+                }
 
-            val onFinal = staticCFunction { jsonResult: CPointer<ByteVar>?, userData: COpaquePointer? ->
-                val cb = userData!!.asStableRef<SttStream>().get()
-                cb.onFinalResult(
-                    TranscriptionJsonParser.parse(jsonResult?.toKString() ?: "{}")
-                )
-            }
+            val onFinal =
+                staticCFunction { jsonResult: CPointer<ByteVar>?, userData: COpaquePointer? ->
+                    val cb = userData!!.asStableRef<SttStream>().get()
+                    cb.onFinalResult(
+                        TranscriptionJsonParser.parse(jsonResult?.toKString() ?: "{}"),
+                    )
+                }
 
-            val onError = staticCFunction { message: CPointer<ByteVar>?, userData: COpaquePointer? ->
-                val cb = userData!!.asStableRef<SttStream>().get()
-                cb.onError(message?.toKString() ?: "Unknown error")
-            }
+            val onError =
+                staticCFunction { message: CPointer<ByteVar>?, userData: COpaquePointer? ->
+                    val cb = userData!!.asStableRef<SttStream>().get()
+                    cb.onError(message?.toKString() ?: "Unknown error")
+                }
 
             speech_stt_transcribe_stream(
-                nativeSamples, samples.size,
-                onPartial, onFinal, onError,
-                ref.asCPointer()
+                nativeSamples,
+                samples.size,
+                onPartial,
+                onFinal,
+                onError,
+                ref.asCPointer(),
             )
 
             ref.dispose()
@@ -92,17 +131,15 @@ actual object SpeechBridge {
     //                    TEXT-TO-SPEECH (TTS)
     // ══════════════════════════════════════════════════════════════
 
-    actual fun initTts(modelPath: String, configPath: String, config: TtsConfig): Boolean {
-        return speech_tts_init(
-            modelPath,
-            configPath,
-            config.espeakDataPath ?: "",
-            config.speakerId ?: -1,
-            config.speechRate,
-            config.sampleRate,
-            config.sentenceSilence
-        )
-    }
+    actual fun initTts(modelPath: String, configPath: String, config: TtsConfig): Boolean = speech_tts_init(
+        modelPath,
+        configPath,
+        config.espeakDataPath ?: "",
+        config.speakerId ?: -1,
+        config.speechRate,
+        config.sampleRate,
+        config.sentenceSilence,
+    )
 
     actual fun synthesize(text: String): ShortArray {
         memScoped {
@@ -121,21 +158,24 @@ actual object SpeechBridge {
     actual fun synthesizeStream(text: String, callback: TtsStream) {
         val ref = StableRef.create(callback)
 
-        val onChunk = staticCFunction { samples: CPointer<ShortVar>?, nSamples: Int, userData: COpaquePointer? ->
-            val cb = userData!!.asStableRef<TtsStream>().get()
-            if (samples != null && nSamples > 0) {
-                cb.onAudioChunk(ShortArray(nSamples) { samples[it] })
+        val onChunk =
+            staticCFunction { samples: CPointer<ShortVar>?, nSamples: Int, userData: COpaquePointer? ->
+                val cb = userData!!.asStableRef<TtsStream>().get()
+                if (samples != null && nSamples > 0) {
+                    cb.onAudioChunk(ShortArray(nSamples) { samples[it] })
+                }
             }
-        }
 
-        val onComplete = staticCFunction { userData: COpaquePointer? ->
-            userData!!.asStableRef<TtsStream>().get().onComplete()
-        }
+        val onComplete =
+            staticCFunction { userData: COpaquePointer? ->
+                userData!!.asStableRef<TtsStream>().get().onComplete()
+            }
 
-        val onError = staticCFunction { message: CPointer<ByteVar>?, userData: COpaquePointer? ->
-            val cb = userData!!.asStableRef<TtsStream>().get()
-            cb.onError(message?.toKString() ?: "Unknown error")
-        }
+        val onError =
+            staticCFunction { message: CPointer<ByteVar>?, userData: COpaquePointer? ->
+                val cb = userData!!.asStableRef<TtsStream>().get()
+                cb.onError(message?.toKString() ?: "Unknown error")
+            }
 
         speech_tts_synthesize_stream(text, onChunk, onComplete, onError, ref.asCPointer())
         ref.dispose()
@@ -152,25 +192,28 @@ actual object SpeechBridge {
     @Composable
     actual fun getModelPath(modelFileName: String): String {
         val bundle = NSBundle.mainBundle
-        val resourcePath = bundle.pathForResource(
-            modelFileName.substringBeforeLast("."),
-            modelFileName.substringAfterLast(".")
-        )
+        val resourcePath =
+            bundle.pathForResource(
+                modelFileName.substringBeforeLast("."),
+                modelFileName.substringAfterLast("."),
+            )
         if (resourcePath != null) return resourcePath
 
         val fileManager = NSFileManager.defaultManager
 
         @Suppress("UNCHECKED_CAST")
-        val documentsUrl = (fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask) as List<NSURL>)
-            .firstOrNull()
+        val documentsUrl =
+            (fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask) as List<NSURL>)
+                .firstOrNull()
         if (documentsUrl != null) {
             val filePath = documentsUrl.path + "/$modelFileName"
             if (fileManager.fileExistsAtPath(filePath)) return filePath
         }
 
         @Suppress("UNCHECKED_CAST")
-        val cacheUrl = (fileManager.URLsForDirectory(NSCachesDirectory, NSUserDomainMask) as List<NSURL>)
-            .firstOrNull()
+        val cacheUrl =
+            (fileManager.URLsForDirectory(NSCachesDirectory, NSUserDomainMask) as List<NSURL>)
+                .firstOrNull()
         if (cacheUrl != null) {
             val cachePath = cacheUrl.path + "/$modelFileName"
             if (fileManager.fileExistsAtPath(cachePath)) return cachePath

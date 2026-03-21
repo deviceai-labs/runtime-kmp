@@ -37,7 +37,6 @@ package dev.deviceai.core
  * | [Environment.Production] | required | api.deviceai.dev | release builds |
  */
 object DeviceAI {
-
     internal var cloudConfig: CloudConfig? = null
         private set
 
@@ -56,11 +55,7 @@ object DeviceAI {
      * @param block   Optional DSL block to configure cloud behaviour, telemetry,
      *   and app metadata. See [CloudConfig.Builder].
      */
-    fun initialize(
-        context: Any? = null,
-        apiKey: String? = null,
-        block: CloudConfig.Builder.() -> Unit = {},
-    ) {
+    fun initialize(context: Any? = null, apiKey: String? = null, block: CloudConfig.Builder.() -> Unit = {}) {
         val builder = CloudConfig.Builder(apiKey).apply(block)
         val config = builder.build()
 
@@ -69,34 +64,40 @@ object DeviceAI {
         DeviceAIRuntime.configure(config.environment)
         cloudConfig = config
 
-        CoreSDKLogger.info("DeviceAI", buildString {
-            append("Initialized — env=${config.environment}")
-            if (config.environment != Environment.Development) {
-                append(", baseUrl=${config.baseUrl}")
-                append(", telemetry=${config.telemetry}")
-            }
-        })
+        CoreSDKLogger.info(
+            "DeviceAI",
+            buildString {
+                append("Initialized — env=${config.environment}")
+                if (config.environment != Environment.Development) {
+                    append(", baseUrl=${config.baseUrl}")
+                    append(", telemetry=${config.telemetry}")
+                }
+            },
+        )
 
         if (config.environment == Environment.Development) {
-            CoreSDKLogger.debug("DeviceAI",
+            CoreSDKLogger.debug(
+                "DeviceAI",
                 "Development mode — cloud calls disabled. " +
-                "Provide model path explicitly: DeviceAI.llm.chat(modelPath)"
+                    "Provide model path explicitly: DeviceAI.llm.chat(modelPath)",
             )
             return
         }
 
         if (apiKey == null) {
-            CoreSDKLogger.warn("DeviceAI",
+            CoreSDKLogger.warn(
+                "DeviceAI",
                 "apiKey is required for Environment.${config.environment}. " +
-                "Cloud features are disabled. Get your dai_live_* key from cloud.deviceai.dev."
+                    "Cloud features are disabled. Get your dai_live_* key from cloud.deviceai.dev.",
             )
             return
         }
 
         // TODO: Phase 2 — start async device registration + manifest sync
         // DeviceRegistration.registerAsync(context, config)
-        CoreSDKLogger.debug("DeviceAI",
-            "Cloud integration pending Phase 2 — backend not yet connected."
+        CoreSDKLogger.debug(
+            "DeviceAI",
+            "Cloud integration pending Phase 2 — backend not yet connected.",
         )
     }
 
@@ -117,4 +118,3 @@ object DeviceAI {
     /** `true` when running in [Environment.Development]. */
     val isDevelopment: Boolean get() = environment == Environment.Development
 }
-

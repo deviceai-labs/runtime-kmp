@@ -44,7 +44,6 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.koin.compose.koinInject
 
 class HomeScreen : Screen {
-
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -56,30 +55,33 @@ class HomeScreen : Screen {
         }
 
         Box(
-            modifier = Modifier
+            modifier =
+            Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF2D1B69),                  // Rich purple top
-                            MaterialTheme.colorScheme.background  // Theme background bottom
-                        )
-                    )
-                )
+                        colors =
+                        listOf(
+                            Color(0xFF2D1B69), // Rich purple top
+                            MaterialTheme.colorScheme.background, // Theme background bottom
+                        ),
+                    ),
+                ),
         ) {
             Column(
-                modifier = Modifier
+                modifier =
+                Modifier
                     .fillMaxSize()
                     .padding(horizontal = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceEvenly
+                verticalArrangement = Arrangement.SpaceEvenly,
             ) {
                 Spacer(Modifier.height(16.dp))
                 BrandingSection()
                 StatusSection(
                     state = loadingState,
                     onGetStarted = { navigator.push(MainScreen()) },
-                    onRetry = { viewModel.retryInitialize() }
+                    onRetry = { viewModel.retryInitialize() },
                 )
                 Spacer(Modifier.height(16.dp))
             }
@@ -93,41 +95,45 @@ private fun BrandingSection() {
     val scale by pulse.animateFloat(
         initialValue = 1f,
         targetValue = 1.10f,
-        animationSpec = infiniteRepeatable(
+        animationSpec =
+        infiniteRepeatable(
             animation = tween(2200, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "scale"
+        label = "scale",
     )
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // Glowing mic icon
         Box(contentAlignment = Alignment.Center) {
             Box(
-                modifier = Modifier
+                modifier =
+                Modifier
                     .size(140.dp)
                     .scale(scale)
                     .background(
                         Brush.radialGradient(
-                            colors = listOf(
+                            colors =
+                            listOf(
                                 MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                                Color.Transparent
-                            )
+                                Color.Transparent,
+                            ),
                         ),
-                        shape = CircleShape
-                    )
+                        shape = CircleShape,
+                    ),
             )
             Box(
-                modifier = Modifier
+                modifier =
+                Modifier
                     .size(88.dp)
                     .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Mic,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier.size(44.dp),
                 )
             }
         }
@@ -137,7 +143,7 @@ private fun BrandingSection() {
         Text(
             text = "DeviceAI",
             style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(Modifier.height(8.dp))
         Text(
@@ -145,35 +151,32 @@ private fun BrandingSection() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
         )
     }
 }
 
 @Composable
-private fun StatusSection(
-    state: LoadingState,
-    onGetStarted: () -> Unit,
-    onRetry: () -> Unit
-) {
+private fun StatusSection(state: LoadingState, onGetStarted: () -> Unit, onRetry: () -> Unit) {
     Box(
-        modifier = Modifier
+        modifier =
+        Modifier
             .fillMaxWidth()
             .padding(vertical = 16.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         when (state) {
             is LoadingState.Initializing -> {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(
                         color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
                         text = "Checking for model...",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -182,31 +185,33 @@ private fun StatusSection(
                 val p = state.progress
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     LinearProgressIndicator(
                         progress = { (p.percentComplete / 100f).coerceIn(0f, 1f) },
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     )
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        text = "${p.percentComplete.toInt()}%  ·  ${formatMb(p.bytesDownloaded)} / ${formatMb(p.totalBytes)}",
+                        text = "${p.percentComplete.toInt()}%  ·  ${formatMb(
+                            p.bytesDownloaded,
+                        )} / ${formatMb(p.totalBytes)}",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
                         text = "Downloading Whisper Tiny...",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = "One-time download · runs fully on-device",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -216,21 +221,23 @@ private fun StatusSection(
                     Text(
                         text = "Model ready",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.height(20.dp))
                     Button(
                         onClick = onGetStarted,
-                        modifier = Modifier
+                        modifier =
+                        Modifier
                             .fillMaxWidth(0.65f)
                             .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                        colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
                     ) {
                         Text(
                             text = "Get Started",
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     }
                 }
@@ -242,7 +249,7 @@ private fun StatusSection(
                         text = state.message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(16.dp))
                     OutlinedButton(onClick = onRetry) {
@@ -259,5 +266,5 @@ private fun formatMb(bytes: Long): String {
     val mb = bytes / (1024.0 * 1024.0)
     val whole = mb.toLong()
     val decimal = ((mb - whole) * 10).toLong()
-    return "$whole.${decimal} MB"
+    return "$whole.$decimal MB"
 }

@@ -15,7 +15,6 @@ import platform.Foundation.NSError
 @OptIn(ExperimentalForeignApi::class)
 @Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 actual class AudioRecorder actual constructor() {
-
     private val engine = AVAudioEngine()
     private val samples = mutableListOf<Float>()
     private var recording = false
@@ -25,8 +24,10 @@ actual class AudioRecorder actual constructor() {
 
         memScoped {
             val sessionErr = alloc<ObjCObjectVar<NSError?>>()
-            val ok = AVAudioSession.sharedInstance()
-                .setCategory(AVAudioSessionCategoryRecord, error = sessionErr.ptr)
+            val ok =
+                AVAudioSession
+                    .sharedInstance()
+                    .setCategory(AVAudioSessionCategoryRecord, error = sessionErr.ptr)
             if (!ok) {
                 println("[AudioRecorder] AVAudioSession setCategory failed")
                 return
@@ -53,7 +54,7 @@ actual class AudioRecorder actual constructor() {
         inputNode.installTapOnBus(
             bus = 0u,
             bufferSize = 4096u,
-            format = null
+            format = null,
         ) { buffer, _ ->
             buffer ?: return@installTapOnBus
             val channelData = buffer.floatChannelData ?: return@installTapOnBus

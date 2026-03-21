@@ -50,11 +50,12 @@ object ModelRegistry {
      */
     fun initialize(config: RegistryConfig = RegistryConfig()) {
         this.config = config
-        this.client = HttpClient {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
+        this.client =
+            HttpClient {
+                install(ContentNegotiation) {
+                    json(Json { ignoreUnknownKeys = true })
+                }
             }
-        }
         this.whisperCatalog = WhisperCatalog(client, config)
         this.piperCatalog = PiperCatalog(client, config)
 
@@ -64,19 +65,22 @@ object ModelRegistry {
         val paths: StoragePaths = PlatformStorage
         this.store = MetadataStore(fs, paths)
         val http = HttpFileDownloader(client, config, fs)
-        this.downloader = ModelDownloader(
-            listOf(
-                WhisperDownloadStrategy(http, fs, paths, store),
-                PiperDownloadStrategy(http, fs, paths, store)
+        this.downloader =
+            ModelDownloader(
+                listOf(
+                    WhisperDownloadStrategy(http, fs, paths, store),
+                    PiperDownloadStrategy(http, fs, paths, store),
+                ),
             )
-        )
         initialized = true
     }
 
     private fun requireInitialized() {
-        if (!initialized) throw IllegalStateException(
-            "ModelRegistry not initialized. Call ModelRegistry.initialize() first."
-        )
+        if (!initialized) {
+            throw IllegalStateException(
+                "ModelRegistry not initialized. Call ModelRegistry.initialize() first.",
+            )
+        }
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -98,10 +102,7 @@ object ModelRegistry {
      * @param language Filter by language code prefix (e.g. "en", "en_US"). Null returns all.
      * @param quality Filter by quality tier. Null returns all.
      */
-    suspend fun getPiperVoices(
-        language: String? = null,
-        quality: PiperQuality? = null
-    ): List<PiperVoiceInfo> {
+    suspend fun getPiperVoices(language: String? = null, quality: PiperQuality? = null): List<PiperVoiceInfo> {
         requireInitialized()
         return piperCatalog.fetchVoices(language, quality)
     }
@@ -120,18 +121,15 @@ object ModelRegistry {
      * @param onProgress Called with download progress updates
      * @return [Result] containing the [LocalModel] on success
      */
-    suspend fun download(
-        model: ModelInfo,
-        onProgress: (DownloadProgress) -> Unit = {}
-    ): Result<LocalModel> {
+    suspend fun download(model: ModelInfo, onProgress: (DownloadProgress) -> Unit = {}): Result<LocalModel> {
         requireInitialized()
 
         // Return cached model immediately if already downloaded (all required files present).
         val existing = store.getModel(model.id)
         val existingConfig = existing?.configPath
-        if (existing != null
-            && PlatformStorage.fileExists(existing.modelPath)
-            && (existingConfig == null || PlatformStorage.fileExists(existingConfig))
+        if (existing != null &&
+            PlatformStorage.fileExists(existing.modelPath) &&
+            (existingConfig == null || PlatformStorage.fileExists(existingConfig))
         ) {
             onProgress(DownloadProgress.completed(PlatformStorage.fileSize(existing.modelPath)))
             return Result.success(existing)
@@ -160,7 +158,7 @@ object ModelRegistry {
         modelId: String,
         url: String,
         modelType: LocalModelType,
-        onProgress: (DownloadProgress) -> Unit = {}
+        onProgress: (DownloadProgress) -> Unit = {},
     ): Result<LocalModel> {
         requireInitialized()
 
@@ -172,17 +170,18 @@ object ModelRegistry {
         }
 
         val filename = url.substringAfterLast('/')
-        val destDir  = "${PlatformStorage.getModelsDir()}/${modelType.id.lowercase()}"
+        val destDir = "${PlatformStorage.getModelsDir()}/${modelType.id.lowercase()}"
         val destPath = "$destDir/$filename"
 
         return try {
             HttpFileDownloader(client, config, PlatformStorage).download(url, destPath, onProgress)
-            val local = LocalModel(
-                modelId      = modelId,
-                modelType    = modelType,
-                modelPath    = destPath,
-                downloadedAt = currentTimeMillis()
-            )
+            val local =
+                LocalModel(
+                    modelId = modelId,
+                    modelType = modelType,
+                    modelPath = destPath,
+                    downloadedAt = currentTimeMillis(),
+                )
             store.addModel(local)
             Result.success(local)
         } catch (e: Exception) {

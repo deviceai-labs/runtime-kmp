@@ -19,13 +19,9 @@ import kotlin.coroutines.coroutineContext
 internal class HttpFileDownloader(
     private val client: HttpClient,
     private val config: RegistryConfig,
-    private val fs: FileSystem
+    private val fs: FileSystem,
 ) {
-    suspend fun download(
-        url: String,
-        destPath: String,
-        onProgress: (DownloadProgress) -> Unit = {}
-    ) {
+    suspend fun download(url: String, destPath: String, onProgress: (DownloadProgress) -> Unit = {}) {
         val destDir = destPath.substringBeforeLast('/')
         fs.ensureDirectoryExists(destDir)
 
@@ -34,46 +30,50 @@ internal class HttpFileDownloader(
 
         onProgress(DownloadProgress.pending())
 
-        client.prepareGet(url) {
-            if (existingBytes > 0) {
-                header(HttpHeaders.Range, "bytes=$existingBytes-")
-            }
-        }.execute { httpResponse ->
-            val isResuming = httpResponse.status.value == 206 && existingBytes > 0
-            val contentLength = httpResponse.contentLength() ?: 0L
-            val totalBytes = if (isResuming) contentLength + existingBytes else contentLength
+        client
+            .prepareGet(url) {
+                if (existingBytes > 0) {
+                    header(HttpHeaders.Range, "bytes=$existingBytes-")
+                }
+            }.execute { httpResponse ->
+                val isResuming = httpResponse.status.value == 206 && existingBytes > 0
+                val contentLength = httpResponse.contentLength() ?: 0L
+                val totalBytes = if (isResuming) contentLength + existingBytes else contentLength
 
-            val channel: ByteReadChannel = httpResponse.bodyAsChannel()
-            val buffer = ByteArray(config.downloadBufferSize)
-            var bytesDownloaded = if (isResuming) existingBytes else 0L
+                val channel: ByteReadChannel = httpResponse.bodyAsChannel()
+                val buffer = ByteArray(config.downloadBufferSize)
+                var bytesDownloaded = if (isResuming) existingBytes else 0L
 
-            if (!isResuming && existingBytes > 0) {
-                fs.deleteFile(tempPath)
-            }
+                if (!isResuming && existingBytes > 0) {
+                    fs.deleteFile(tempPath)
+                }
 
-            while (!channel.isClosedForRead) {
-                coroutineContext.ensureActive()
+                while (!channel.isClosedForRead) {
+                    coroutineContext.ensureActive()
 
-                val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
-                if (bytesRead <= 0) break
+                    val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
+                    if (bytesRead <= 0) break
 
-                appendToFile(tempPath, buffer, bytesRead)
-                bytesDownloaded += bytesRead
+                    appendToFile(tempPath, buffer, bytesRead)
+                    bytesDownloaded += bytesRead
 
-                val percent = if (totalBytes > 0) {
-                    (bytesDownloaded.toFloat() / totalBytes * 100f).coerceIn(0f, 100f)
-                } else 0f
+                    val percent =
+                        if (totalBytes > 0) {
+                            (bytesDownloaded.toFloat() / totalBytes * 100f).coerceIn(0f, 100f)
+                        } else {
+                            0f
+                        }
 
-                onProgress(
-                    DownloadProgress(
-                        bytesDownloaded = bytesDownloaded,
-                        totalBytes = totalBytes,
-                        percentComplete = percent,
-                        state = DownloadState.DOWNLOADING
+                    onProgress(
+                        DownloadProgress(
+                            bytesDownloaded = bytesDownloaded,
+                            totalBytes = totalBytes,
+                            percentComplete = percent,
+                            state = DownloadState.DOWNLOADING,
+                        ),
                     )
-                )
+                }
             }
-        }
 
         fs.deleteFile(destPath)
         if (!fs.moveFile(tempPath, destPath)) {

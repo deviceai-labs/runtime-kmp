@@ -60,15 +60,16 @@ fun LlmTabContent(viewModel: LlmViewModel, padding: PaddingValues) {
     }
 
     Box(
-        modifier = Modifier
+        modifier =
+        Modifier
             .fillMaxSize()
-            .padding(padding)
+            .padding(padding),
     ) {
         when (val s = state) {
             is LlmState.NotAvailable -> NotAvailableContent()
-            is LlmState.Loading      -> LoadingContent()
-            is LlmState.Ready        -> ChatContent(messages, isGenerating, viewModel)
-            is LlmState.Error        -> ErrorContent(s.msg)
+            is LlmState.Loading -> LoadingContent()
+            is LlmState.Ready -> ChatContent(messages, isGenerating, viewModel)
+            is LlmState.Error -> ErrorContent(s.msg)
         }
     }
 }
@@ -78,30 +79,31 @@ fun LlmTabContent(viewModel: LlmViewModel, padding: PaddingValues) {
 @Composable
 private fun NotAvailableContent() {
     Column(
-        modifier = Modifier
+        modifier =
+        Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Icon(
             imageVector = Icons.Default.SmartToy,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(16.dp))
         Text(
             text = "On-Device Chat",
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(Modifier.height(8.dp))
         Text(
             text = "No model loaded. Provide a model path via initialize().",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -113,14 +115,14 @@ private fun LoadingContent() {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator()
         Spacer(Modifier.height(16.dp))
         Text(
             text = "Loading model...",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -130,17 +132,18 @@ private fun LoadingContent() {
 @Composable
 private fun ErrorContent(message: String) {
     Column(
-        modifier = Modifier
+        modifier =
+        Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -148,11 +151,7 @@ private fun ErrorContent(message: String) {
 // ── Chat ──────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ChatContent(
-    messages: List<ChatMessage>,
-    isGenerating: Boolean,
-    viewModel: LlmViewModel
-) {
+private fun ChatContent(messages: List<ChatMessage>, isGenerating: Boolean, viewModel: LlmViewModel) {
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
@@ -163,15 +162,16 @@ private fun ChatContent(
     }
 
     Column(
-        modifier = Modifier
+        modifier =
+        Modifier
             .fillMaxSize()
-            .imePadding()
+            .imePadding(),
     ) {
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(messages, key = { it.id }) { message ->
                 ChatBubble(message)
@@ -181,15 +181,15 @@ private fun ChatContent(
         AnimatedVisibility(
             visible = isGenerating,
             enter = fadeIn(),
-            exit = fadeOut()
+            exit = fadeOut(),
         ) {
             Box(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 OutlinedButton(
                     onClick = viewModel::cancelGeneration,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 ) {
                     Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(16.dp))
                     Text("  Stop", style = MaterialTheme.typography.labelMedium)
@@ -198,11 +198,12 @@ private fun ChatContent(
         }
 
         Row(
-            modifier = Modifier
+            modifier =
+            Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.Bottom,
         ) {
             OutlinedTextField(
                 value = inputText,
@@ -210,14 +211,14 @@ private fun ChatContent(
                 modifier = Modifier.weight(1f),
                 placeholder = { Text("Message") },
                 maxLines = 4,
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(24.dp),
             )
             IconButton(
                 onClick = {
                     viewModel.sendMessage(inputText.trim())
                     inputText = ""
                 },
-                enabled = inputText.isNotBlank() && !isGenerating
+                enabled = inputText.isNotBlank() && !isGenerating,
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
             }
@@ -230,28 +231,42 @@ private fun ChatBubble(message: ChatMessage) {
     val isUser = message.role == Role.USER
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
         Surface(
-            shape = RoundedCornerShape(
+            shape =
+            RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 16.dp,
                 bottomStart = if (isUser) 16.dp else 4.dp,
-                bottomEnd = if (isUser) 4.dp else 16.dp
+                bottomEnd = if (isUser) 4.dp else 16.dp,
             ),
-            color = if (isUser) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.widthIn(max = 300.dp)
+            color =
+            if (isUser) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+            modifier = Modifier.widthIn(max = 300.dp),
         ) {
-            val displayText = if (message.isStreaming && message.text.isEmpty()) "▌"
-                              else if (message.isStreaming) message.text + " ▌"
-                              else message.text
+            val displayText =
+                if (message.isStreaming && message.text.isEmpty()) {
+                    "▌"
+                } else if (message.isStreaming) {
+                    message.text + " ▌"
+                } else {
+                    message.text
+                }
             Text(
                 text = displayText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isUser) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                color =
+                if (isUser) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             )
         }
     }

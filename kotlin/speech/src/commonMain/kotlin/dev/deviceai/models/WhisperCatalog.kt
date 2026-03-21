@@ -14,10 +14,7 @@ import kotlinx.serialization.json.Json
  * API: GET https://huggingface.co/api/models/ggerganov/whisper.cpp → siblings[]
  * Download: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{filename}
  */
-internal class WhisperCatalog(
-    private val client: HttpClient,
-    private val config: RegistryConfig
-) {
+internal class WhisperCatalog(private val client: HttpClient, private val config: RegistryConfig) {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Serializable
@@ -30,22 +27,24 @@ internal class WhisperCatalog(
      * Regex to parse whisper GGML filenames:
      *   ggml-tiny.bin, ggml-base.en.bin, ggml-medium-q5_1.bin, ggml-large-v3-turbo.bin
      */
-    private val filenameRegex = Regex(
-        """ggml-(tiny|base|small|medium|large-v1|large-v2|large-v3-turbo|large-v3)(?:\.(en))?(?:-(q5_1|q8_0))?\.bin"""
-    )
+    private val filenameRegex =
+        Regex(
+            """ggml-(tiny|base|small|medium|large-v1|large-v2|large-v3-turbo|large-v3)(?:\.(en))?(?:-(q5_1|q8_0))?\.bin""",
+        )
 
     // Known approximate sizes (bytes) for non-quantized models.
     // We'll get the real size via HEAD request on download.
-    private val approximateSizes: Map<String, Long> = mapOf(
-        "tiny" to 77_691_713L,
-        "base" to 147_951_465L,
-        "small" to 487_601_617L,
-        "medium" to 1_533_774_081L,
-        "large-v1" to 3_094_623_201L,
-        "large-v2" to 3_094_623_201L,
-        "large-v3" to 3_094_623_201L,
-        "large-v3-turbo" to 1_622_089_793L
-    )
+    private val approximateSizes: Map<String, Long> =
+        mapOf(
+            "tiny" to 77_691_713L,
+            "base" to 147_951_465L,
+            "small" to 487_601_617L,
+            "medium" to 1_533_774_081L,
+            "large-v1" to 3_094_623_201L,
+            "large-v2" to 3_094_623_201L,
+            "large-v3" to 3_094_623_201L,
+            "large-v3-turbo" to 1_622_089_793L,
+        )
 
     private var cachedModels: List<WhisperModelInfo>? = null
     private var cacheTimestamp: Long = 0
@@ -58,11 +57,12 @@ internal class WhisperCatalog(
         }
 
         // Try fetching from HF, fall back to cached catalog on disk
-        val models = try {
-            fetchFromApi()
-        } catch (e: Exception) {
-            loadCachedFromDisk() ?: throw e
-        }
+        val models =
+            try {
+                fetchFromApi()
+            } catch (e: Exception) {
+                loadCachedFromDisk() ?: throw e
+            }
 
         cachedModels = models
         cacheTimestamp = now
@@ -71,9 +71,10 @@ internal class WhisperCatalog(
     }
 
     private suspend fun fetchFromApi(): List<WhisperModelInfo> {
-        val response: HttpResponse = client.get(
-            "${config.huggingFaceBaseUrl}/api/models/ggerganov/whisper.cpp"
-        )
+        val response: HttpResponse =
+            client.get(
+                "${config.huggingFaceBaseUrl}/api/models/ggerganov/whisper.cpp",
+            )
         val body: String = response.body()
         val hfModel = json.decodeFromString<HfModelResponse>(body)
 
@@ -94,17 +95,21 @@ internal class WhisperCatalog(
         // Build display name
         val displayParts = mutableListOf<String>()
         displayParts.add("Whisper ${sizeStr.replaceFirstChar { it.uppercase() }}")
-        if (isEnglish) displayParts.add("(English)")
-        else displayParts.add("(Multilingual)")
+        if (isEnglish) {
+            displayParts.add("(English)")
+        } else {
+            displayParts.add("(Multilingual)")
+        }
         if (quantization != null) displayParts.add("[${quantization.label}]")
 
         // Estimate size — quantized models are roughly 40-60% of full size
         val baseSize = approximateSizes[sizeStr] ?: 0L
-        val estimatedSize = when (quantization) {
-            Quantization.Q5_1 -> (baseSize * 0.45).toLong()
-            Quantization.Q8_0 -> (baseSize * 0.65).toLong()
-            null -> baseSize
-        }
+        val estimatedSize =
+            when (quantization) {
+                Quantization.Q5_1 -> (baseSize * 0.45).toLong()
+                Quantization.Q8_0 -> (baseSize * 0.65).toLong()
+                null -> baseSize
+            }
 
         val downloadUrl = "${config.huggingFaceBaseUrl}/ggerganov/whisper.cpp/resolve/main/$filename"
 
@@ -115,7 +120,7 @@ internal class WhisperCatalog(
             size = whisperSize,
             isEnglishOnly = isEnglish,
             quantization = quantization,
-            downloadUrl = downloadUrl
+            downloadUrl = downloadUrl,
         )
     }
 
@@ -133,10 +138,11 @@ internal class WhisperCatalog(
     private fun saveCacheToDisk(models: List<WhisperModelInfo>) {
         PlatformStorage.ensureDirectoryExists(PlatformStorage.getModelsDir())
         val cachePath = "${PlatformStorage.getModelsDir()}/whisper_catalog_cache.json"
-        val cached = CachedWhisperCatalog(
-            models = models.map { CachedWhisperEntry.fromModelInfo(it) },
-            cachedAt = currentTimeMillis()
-        )
+        val cached =
+            CachedWhisperCatalog(
+                models = models.map { CachedWhisperEntry.fromModelInfo(it) },
+                cachedAt = currentTimeMillis(),
+            )
         PlatformStorage.writeText(cachePath, json.encodeToString(CachedWhisperCatalog.serializer(), cached))
     }
 
@@ -149,10 +155,7 @@ internal class WhisperCatalog(
 }
 
 @Serializable
-private data class CachedWhisperCatalog(
-    val models: List<CachedWhisperEntry>,
-    val cachedAt: Long
-)
+private data class CachedWhisperCatalog(val models: List<CachedWhisperEntry>, val cachedAt: Long)
 
 @Serializable
 private data class CachedWhisperEntry(
@@ -161,7 +164,7 @@ private data class CachedWhisperEntry(
     val sizeBytes: Long,
     val size: String,
     val isEnglishOnly: Boolean,
-    val quantization: String?
+    val quantization: String?,
 ) {
     fun toModelInfo(baseUrl: String) = WhisperModelInfo(
         id = id,
@@ -170,7 +173,7 @@ private data class CachedWhisperEntry(
         size = WhisperSize.fromString(size) ?: WhisperSize.TINY,
         isEnglishOnly = isEnglishOnly,
         quantization = quantization?.let { Quantization.fromString(it) },
-        downloadUrl = "$baseUrl/ggerganov/whisper.cpp/resolve/main/$id"
+        downloadUrl = "$baseUrl/ggerganov/whisper.cpp/resolve/main/$id",
     )
 
     companion object {
@@ -180,8 +183,7 @@ private data class CachedWhisperEntry(
             sizeBytes = m.sizeBytes,
             size = m.size.label,
             isEnglishOnly = m.isEnglishOnly,
-            quantization = m.quantization?.label
+            quantization = m.quantization?.label,
         )
     }
 }
-

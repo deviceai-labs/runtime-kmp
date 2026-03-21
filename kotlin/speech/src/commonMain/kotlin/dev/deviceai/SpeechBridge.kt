@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 
 @Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 expect object SpeechBridge {
-
     // ══════════════════════════════════════════════════════════════
     //                    SPEECH-TO-TEXT (STT)
     // ══════════════════════════════════════════════════════════════
@@ -72,11 +71,7 @@ expect object SpeechBridge {
      * @param config Optional configuration parameters
      * @return true if initialization succeeded
      */
-    fun initTts(
-        modelPath: String,
-        configPath: String,
-        config: TtsConfig = TtsConfig()
-    ): Boolean
+    fun initTts(modelPath: String, configPath: String, config: TtsConfig = TtsConfig()): Boolean
 
     /**
      * Synthesize text to audio samples.

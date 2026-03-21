@@ -9,14 +9,14 @@ import kotlinx.serialization.json.Json
  * Depends on [FileSystem] for I/O and [StoragePaths] for resolving the storage
  * root — both injected at construction, enabling testing without a real filesystem.
  */
-class MetadataStore(
-    private val fs: FileSystem,
-    private val paths: StoragePaths
-) {
-    private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
+class MetadataStore(private val fs: FileSystem, private val paths: StoragePaths) {
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            prettyPrint = true
+        }
 
-    private fun metadataPath(): String =
-        "${paths.getModelsDir()}/registry_metadata.json"
+    private fun metadataPath(): String = "${paths.getModelsDir()}/registry_metadata.json"
 
     fun loadDownloadedModels(): List<LocalModel> {
         val content = fs.readText(metadataPath()) ?: return emptyList()
@@ -45,6 +45,5 @@ class MetadataStore(
         saveDownloadedModels(models)
     }
 
-    fun getModel(modelId: String): LocalModel? =
-        loadDownloadedModels().find { it.modelId == modelId }
+    fun getModel(modelId: String): LocalModel? = loadDownloadedModels().find { it.modelId == modelId }
 }

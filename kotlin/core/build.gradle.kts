@@ -48,16 +48,22 @@ kotlin {
 }
 
 extensions.configure<LibraryExtension> {
-    namespace  = "dev.deviceai.core"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    namespace = "dev.deviceai.core"
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
     }
 
     buildTypes {
         release { isMinifyEnabled = false }
-        debug   { isMinifyEnabled = false }
+        debug { isMinifyEnabled = false }
     }
 
     compileOptions {

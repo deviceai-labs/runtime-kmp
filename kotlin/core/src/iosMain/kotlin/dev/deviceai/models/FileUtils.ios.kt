@@ -3,8 +3,9 @@ package dev.deviceai.models
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
-import platform.Foundation.*
-import platform.posix.*
+import platform.Foundation.NSData
+import platform.Foundation.NSFileHandle
+import platform.Foundation.NSFileManager
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun appendToFile(path: String, data: ByteArray, length: Int) {

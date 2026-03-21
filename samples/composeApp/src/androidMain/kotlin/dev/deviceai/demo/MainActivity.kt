@@ -11,7 +11,6 @@ import dev.deviceai.core.Environment
 import dev.deviceai.models.PlatformStorage
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -31,7 +30,7 @@ class MainActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.RECORD_AUDIO),
-                0
+                0,
             )
         }
 

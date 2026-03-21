@@ -8,10 +8,16 @@ package dev.deviceai.models
  */
 interface FileSystem {
     fun ensureDirectoryExists(path: String): Boolean
+
     fun fileExists(path: String): Boolean
+
     fun deleteFile(path: String): Boolean
+
     fun moveFile(from: String, to: String): Boolean
+
     fun fileSize(path: String): Long
+
     fun readText(path: String): String?
+
     fun writeText(path: String, content: String): Boolean
 }

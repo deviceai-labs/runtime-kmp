@@ -13,7 +13,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "DeviceAI",
-        state = rememberWindowState(width = 480.dp, height = 760.dp)
+        state = rememberWindowState(width = 480.dp, height = 760.dp),
     ) {
         App()
     }

@@ -1,8 +1,26 @@
 package dev.deviceai.llm
 
-import dev.deviceai.llm.native.*
+import dev.deviceai.llm.native.llm_cancel
+import dev.deviceai.llm.native.llm_free_string
+import dev.deviceai.llm.native.llm_generate
+import dev.deviceai.llm.native.llm_generate_stream
+import dev.deviceai.llm.native.llm_init
+import dev.deviceai.llm.native.llm_shutdown
 import dev.deviceai.llm.rag.RagAugmentor
-import kotlinx.cinterop.*
+import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.CPointerVar
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.StableRef
+import kotlinx.cinterop.allocArray
+import kotlinx.cinterop.asCPointer
+import kotlinx.cinterop.asStableRef
+import kotlinx.cinterop.cstr
+import kotlinx.cinterop.getPointer
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.staticCFunction
+import kotlinx.cinterop.toKString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
@@ -30,16 +48,21 @@ actual object LlmCppBridge {
         var text = ""
         val elapsed = measureTime {
             memScoped {
-                val rolesArr    = allocArray<CPointerVar<ByteVar>>(augmented.size)
+                val rolesArr = allocArray<CPointerVar<ByteVar>>(augmented.size)
                 val contentsArr = allocArray<CPointerVar<ByteVar>>(augmented.size)
                 augmented.forEachIndexed { i, msg ->
-                    rolesArr[i]    = msg.role.name.lowercase().cstr.getPointer(this)
+                    rolesArr[i] = msg.role.name.lowercase().cstr.getPointer(this)
                     contentsArr[i] = msg.content.cstr.getPointer(this)
                 }
                 val result = llm_generate(
-                    rolesArr, contentsArr, augmented.size,
-                    config.maxTokens, config.temperature,
-                    config.topP, config.topK, config.repeatPenalty
+                    rolesArr,
+                    contentsArr,
+                    augmented.size,
+                    config.maxTokens,
+                    config.temperature,
+                    config.topP,
+                    config.topK,
+                    config.repeatPenalty,
                 )
                 text = result?.toKString()?.also { llm_free_string(result) } ?: ""
             }
@@ -49,46 +72,45 @@ actual object LlmCppBridge {
             tokenCount = text.split(" ").size,
             promptTokenCount = 0,
             finishReason = FinishReason.STOP,
-            generationTimeMs = elapsed.inWholeMilliseconds
+            generationTimeMs = elapsed.inWholeMilliseconds,
         )
     }
 
-    actual fun generateStream(messages: List<LlmMessage>, config: LlmGenConfig): Flow<String> =
-        channelFlow {
-            val augmented = if (config.ragStore != null) RagAugmentor.augment(messages, config) else messages
-            val channel: SendChannel<String> = this
-            val ref = StableRef.create(channel)
+    actual fun generateStream(messages: List<LlmMessage>, config: LlmGenConfig): Flow<String> = channelFlow {
+        val augmented = if (config.ragStore != null) RagAugmentor.augment(messages, config) else messages
+        val channel: SendChannel<String> = this
+        val ref = StableRef.create(channel)
 
-            val onToken = staticCFunction { token: CPointer<ByteVar>?, user: COpaquePointer? ->
-                val ch = user!!.asStableRef<SendChannel<String>>().get()
-                val piece = token?.toKString() ?: return@staticCFunction
-                ch.trySend(piece)
+        val onToken = staticCFunction { token: CPointer<ByteVar>?, user: COpaquePointer? ->
+            val ch = user!!.asStableRef<SendChannel<String>>().get()
+            val piece = token?.toKString() ?: return@staticCFunction
+            ch.trySend(piece)
+        }
+
+        val onError = staticCFunction { message: CPointer<ByteVar>?, user: COpaquePointer? ->
+            val ch = user!!.asStableRef<SendChannel<String>>().get()
+            ch.close(RuntimeException(message?.toKString() ?: "Unknown error"))
+            Unit
+        }
+
+        memScoped {
+            val rolesArr = allocArray<CPointerVar<ByteVar>>(augmented.size)
+            val contentsArr = allocArray<CPointerVar<ByteVar>>(augmented.size)
+            augmented.forEachIndexed { i, msg ->
+                rolesArr[i] = msg.role.name.lowercase().cstr.getPointer(this)
+                contentsArr[i] = msg.content.cstr.getPointer(this)
             }
+            llm_generate_stream(
+                rolesArr, contentsArr, augmented.size,
+                config.maxTokens, config.temperature,
+                config.topP, config.topK, config.repeatPenalty,
+                onToken, onError,
+                ref.asCPointer(),
+            )
+        }
 
-            val onError = staticCFunction { message: CPointer<ByteVar>?, user: COpaquePointer? ->
-                val ch = user!!.asStableRef<SendChannel<String>>().get()
-                ch.close(RuntimeException(message?.toKString() ?: "Unknown error"))
-                Unit
-            }
-
-            memScoped {
-                val rolesArr    = allocArray<CPointerVar<ByteVar>>(augmented.size)
-                val contentsArr = allocArray<CPointerVar<ByteVar>>(augmented.size)
-                augmented.forEachIndexed { i, msg ->
-                    rolesArr[i]    = msg.role.name.lowercase().cstr.getPointer(this)
-                    contentsArr[i] = msg.content.cstr.getPointer(this)
-                }
-                llm_generate_stream(
-                    rolesArr, contentsArr, augmented.size,
-                    config.maxTokens, config.temperature,
-                    config.topP, config.topK, config.repeatPenalty,
-                    onToken, onError,
-                    ref.asCPointer()
-                )
-            }
-
-            ref.dispose()
-        }.flowOn(Dispatchers.Default)
+        ref.dispose()
+    }.flowOn(Dispatchers.Default)
 
     actual fun cancelGeneration() = llm_cancel()
 }

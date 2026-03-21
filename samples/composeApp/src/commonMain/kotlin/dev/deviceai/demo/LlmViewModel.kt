@@ -22,8 +22,11 @@ import kotlinx.coroutines.withContext
 
 sealed class LlmState {
     object NotAvailable : LlmState()
+
     object Loading : LlmState()
+
     object Ready : LlmState()
+
     data class Error(val msg: String) : LlmState()
 }
 
@@ -37,13 +40,12 @@ data class ChatMessage(
     val isStreaming: Boolean = false,
     val id: Long = 0L,
     val timestampMs: Long = 0L,
-    val tokenCount: Int = 0
+    val tokenCount: Int = 0,
 )
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
 class LlmViewModel {
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _state = MutableStateFlow<LlmState>(LlmState.NotAvailable)
@@ -63,6 +65,7 @@ class LlmViewModel {
 
     private var session: ChatSession? = null
     private var nextId = 0L
+
     private fun nextMessageId() = nextId++
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -79,9 +82,10 @@ class LlmViewModel {
     fun loadModel(path: String) {
         scope.launch {
             _state.value = LlmState.Loading
-            val newSession = runCatching {
-                withContext(Dispatchers.IO) { DeviceAI.llm.chat(path) }
-            }.getOrNull()
+            val newSession =
+                runCatching {
+                    withContext(Dispatchers.IO) { DeviceAI.llm.chat(path) }
+                }.getOrNull()
 
             if (newSession?.isReady == true) {
                 session?.close()
@@ -99,14 +103,21 @@ class LlmViewModel {
         if (_isGenerating.value || text.isBlank()) return
 
         val nowMs = currentTimeMillis()
-        val userMsg = ChatMessage(
-            role = Role.USER, text = text,
-            id = nextMessageId(), timestampMs = nowMs
-        )
-        val assistantMsg = ChatMessage(
-            role = Role.ASSISTANT, text = "", isStreaming = true,
-            id = nextMessageId(), timestampMs = nowMs
-        )
+        val userMsg =
+            ChatMessage(
+                role = Role.USER,
+                text = text,
+                id = nextMessageId(),
+                timestampMs = nowMs,
+            )
+        val assistantMsg =
+            ChatMessage(
+                role = Role.ASSISTANT,
+                text = "",
+                isStreaming = true,
+                id = nextMessageId(),
+                timestampMs = nowMs,
+            )
         _messages.value = _messages.value + userMsg + assistantMsg
         _isGenerating.value = true
         _tokensPerSec.value = 0f
@@ -116,7 +127,8 @@ class LlmViewModel {
         var tokenCount = 0
         var firstTokenMs = -1L
 
-        activeSession.send(text)
+        activeSession
+            .send(text)
             .onEach { token ->
                 tokenCount++
                 val elapsedMs = currentTimeMillis() - genStartMs
@@ -132,14 +144,14 @@ class LlmViewModel {
                 val current = _messages.value.toMutableList()
                 val idx = current.indexOfLast { it.role == Role.ASSISTANT && it.isStreaming }
                 if (idx >= 0) {
-                    current[idx] = current[idx].copy(
-                        text = current[idx].text + token,
-                        tokenCount = tokenCount
-                    )
+                    current[idx] =
+                        current[idx].copy(
+                            text = current[idx].text + token,
+                            tokenCount = tokenCount,
+                        )
                     _messages.value = current
                 }
-            }
-            .onCompletion { markStreamingComplete() }
+            }.onCompletion { markStreamingComplete() }
             .catch { e -> markError(e.message ?: "Unknown error") }
             .launchIn(scope)
     }

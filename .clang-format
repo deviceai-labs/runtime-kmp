@@ -1,0 +1,50 @@
+---
+# DeviceAI C++ style — based on Google with minor adjustments
+BasedOnStyle: Google
+
+# Column limit matches .editorconfig
+ColumnLimit: 100
+
+# Indentation
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Braces
+BreakBeforeBraces: Attach
+
+# Pointer alignment
+PointerAlignment: Left        # int* p, not int *p
+
+# Function parameters
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BinPackParameters: false      # each param on its own line when it doesn't fit
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# Include sorting
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # Project headers first
+  - Regex: '".*"'
+    Priority: 1
+  # System / library headers last
+  - Regex: '<.*>'
+    Priority: 2
+
+# Misc
+SpaceBeforeParens: ControlStatements
+SpacesInContainerLiterals: false
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+
+# Line breaks
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Comments
+ReflowComments: false         # don't reformat existing comment blocks
+SpacesBeforeTrailingComments: 2

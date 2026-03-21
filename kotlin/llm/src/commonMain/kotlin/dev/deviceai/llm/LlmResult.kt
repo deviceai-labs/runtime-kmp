@@ -14,16 +14,19 @@ data class LlmResult(
     val tokenCount: Int,
     val promptTokenCount: Int,
     val finishReason: FinishReason,
-    val generationTimeMs: Long
+    val generationTimeMs: Long,
 )
 
 enum class FinishReason {
     /** Model produced an end-of-sequence token */
     STOP,
+
     /** maxTokens limit was reached */
     MAX_TOKENS,
+
     /** Generation was cancelled by the caller */
     CANCELLED,
+
     /** An error occurred during generation */
-    ERROR
+    ERROR,
 }

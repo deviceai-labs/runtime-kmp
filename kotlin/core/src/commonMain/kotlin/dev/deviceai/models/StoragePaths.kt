@@ -8,5 +8,6 @@ package dev.deviceai.models
  */
 interface StoragePaths {
     fun getModelsDir(): String
+
     fun getTempDir(): String
 }

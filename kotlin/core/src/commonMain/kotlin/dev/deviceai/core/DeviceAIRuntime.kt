@@ -23,7 +23,7 @@ enum class Environment {
      * Production / release builds. Points to api.deviceai.dev.
      * Requires an API key. WARN and ERROR logs only — no noise in the console.
      */
-    Production
+    Production,
 }
 
 /**
@@ -59,7 +59,6 @@ enum class Environment {
  * ```
  */
 object DeviceAIRuntime {
-
     /** The environment this SDK instance was configured with. */
     var environment: Environment = Environment.Production
         private set
@@ -77,10 +76,7 @@ object DeviceAIRuntime {
      *   logger (Logcat / NSLog / println). Pass `null` to keep platform default.
      *   Useful for routing SDK logs to Crashlytics, Datadog, Sentry, etc.
      */
-    fun configure(
-        environment: Environment,
-        logHandler: ((LogEvent) -> Unit)? = null
-    ) {
+    fun configure(environment: Environment, logHandler: ((LogEvent) -> Unit)? = null) {
         check(!configured) {
             "DeviceAIRuntime.configure() has already been called. " +
                 "Call it once at app startup (Application.onCreate / main / MainViewController)."

@@ -30,9 +30,7 @@ class CloudConfig private constructor(
     val appVersion: String?,
     val appAttributes: Map<String, String>,
 ) {
-
     class Builder internal constructor(private val apiKey: String? = null) {
-
         /** Target environment. Defaults to [Environment.Production]. */
         var environment: Environment = Environment.Production
 
@@ -80,20 +78,21 @@ class CloudConfig private constructor(
         var appAttributes: Map<String, String> = emptyMap()
 
         internal fun build(): CloudConfig {
-            val resolvedUrl = baseUrl ?: when (environment) {
-                Environment.Development -> "http://localhost:8080"
-                Environment.Staging     -> "https://staging.api.deviceai.dev"
-                Environment.Production  -> "https://api.deviceai.dev"
-            }
+            val resolvedUrl =
+                baseUrl ?: when (environment) {
+                    Environment.Development -> "http://localhost:8080"
+                    Environment.Staging -> "https://staging.api.deviceai.dev"
+                    Environment.Production -> "https://api.deviceai.dev"
+                }
             return CloudConfig(
-                environment           = environment,
-                apiKey                = apiKey,
-                baseUrl               = resolvedUrl,
-                telemetry             = telemetry,
-                wifiOnly              = wifiOnly,
-                manifestSyncInterval  = manifestSyncInterval,
-                appVersion            = appVersion,
-                appAttributes         = appAttributes,
+                environment = environment,
+                apiKey = apiKey,
+                baseUrl = resolvedUrl,
+                telemetry = telemetry,
+                wifiOnly = wifiOnly,
+                manifestSyncInterval = manifestSyncInterval,
+                appVersion = appVersion,
+                appAttributes = appAttributes,
             )
         }
     }

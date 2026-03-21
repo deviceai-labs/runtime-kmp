@@ -81,15 +81,15 @@ class ChatConfig {
 
     internal fun toInitConfig() = LlmInitConfig(
         contextSize = contextSize,
-        maxThreads  = threads,
-        useGpu      = useGpu,
+        maxThreads = threads,
+        useGpu = useGpu,
     )
 
     internal fun toGenConfig() = LlmGenConfig(
-        maxTokens     = maxTokens,
-        temperature   = temperature,
-        topP          = topP,
-        topK          = topK,
+        maxTokens = maxTokens,
+        temperature = temperature,
+        topP = topP,
+        topK = topK,
         repeatPenalty = repeatPenalty,
     )
 }

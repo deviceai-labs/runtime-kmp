@@ -10,19 +10,15 @@ import kotlin.coroutines.coroutineContext
  * Adding support for a new model type does not require modifying this class —
  * register a new [ModelDownloadStrategy] in [ModelRegistry.initialize] instead.
  */
-internal class ModelDownloader(
-    private val strategies: List<ModelDownloadStrategy>
-) {
+internal class ModelDownloader(private val strategies: List<ModelDownloadStrategy>) {
     private val activeDownloads = mutableMapOf<String, Job>()
 
-    suspend fun download(
-        model: ModelInfo,
-        onProgress: (DownloadProgress) -> Unit = {}
-    ): LocalModel {
-        val strategy = strategies.find { it.supports(model) }
-            ?: throw IllegalArgumentException(
-                "No download strategy registered for model type: ${model::class.simpleName}"
-            )
+    suspend fun download(model: ModelInfo, onProgress: (DownloadProgress) -> Unit = {}): LocalModel {
+        val strategy =
+            strategies.find { it.supports(model) }
+                ?: throw IllegalArgumentException(
+                    "No download strategy registered for model type: ${model::class.simpleName}",
+                )
 
         val job = coroutineContext[Job]
         if (job != null) activeDownloads[model.id] = job

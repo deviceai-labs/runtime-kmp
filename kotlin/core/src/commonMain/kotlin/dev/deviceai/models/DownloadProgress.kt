@@ -8,7 +8,7 @@ enum class DownloadState {
     DOWNLOADING,
     COMPLETED,
     FAILED,
-    CANCELLED
+    CANCELLED,
 }
 
 /**
@@ -18,12 +18,15 @@ data class DownloadProgress(
     val bytesDownloaded: Long,
     val totalBytes: Long,
     val percentComplete: Float,
-    val state: DownloadState
+    val state: DownloadState,
 ) {
     companion object {
         fun pending() = DownloadProgress(0, 0, 0f, DownloadState.PENDING)
+
         fun completed(totalBytes: Long) = DownloadProgress(totalBytes, totalBytes, 100f, DownloadState.COMPLETED)
+
         fun failed() = DownloadProgress(0, 0, 0f, DownloadState.FAILED)
+
         fun cancelled() = DownloadProgress(0, 0, 0f, DownloadState.CANCELLED)
     }
 }

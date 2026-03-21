@@ -7,8 +7,4 @@ package dev.deviceai.llm
  * @param maxThreads CPU threads for inference (default 4)
  * @param useGpu Use GPU acceleration — Metal on iOS, Vulkan on Android (default true)
  */
-data class LlmInitConfig(
-    val contextSize: Int = 2048,
-    val maxThreads: Int = 4,
-    val useGpu: Boolean = true
-)
+data class LlmInitConfig(val contextSize: Int = 2048, val maxThreads: Int = 4, val useGpu: Boolean = true)

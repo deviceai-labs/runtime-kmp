@@ -28,7 +28,7 @@ object LlmCatalog {
         sizeBytes = 110_100_480L,
         quantization = "Q4_K_M",
         parameters = "135M",
-        description = "Smallest practical chat model. Extremely fast on any device. Great for testing."
+        description = "Smallest practical chat model. Extremely fast on any device. Great for testing.",
     )
 
     /** 360M — ~271 MB, fast inference, good quality for size */
@@ -40,7 +40,7 @@ object LlmCatalog {
         sizeBytes = 271_000_000L,
         quantization = "Q4_K_M",
         parameters = "360M",
-        description = "Small and fast on-device model. Good balance of quality and download size."
+        description = "Small and fast on-device model. Good balance of quality and download size.",
     )
 
     // ══════════════════════════════════════════════════════════════
@@ -56,7 +56,7 @@ object LlmCatalog {
         sizeBytes = 419_430_400L,
         quantization = "Q4_K_M",
         parameters = "0.5B",
-        description = "Alibaba's compact model. Strong reasoning and multilingual support."
+        description = "Alibaba's compact model. Strong reasoning and multilingual support.",
     )
 
     // ══════════════════════════════════════════════════════════════
@@ -72,7 +72,7 @@ object LlmCatalog {
         sizeBytes = 742_000_000L,
         quantization = "Q4_K_M",
         parameters = "1B",
-        description = "Meta's smallest Llama 3.2 model. Good quality for simple tasks."
+        description = "Meta's smallest Llama 3.2 model. Good quality for simple tasks.",
     )
 
     /** 3B — ~1.9 GB, strong reasoning, needs ~2 GB RAM */
@@ -84,7 +84,7 @@ object LlmCatalog {
         sizeBytes = 1_890_000_000L,
         quantization = "Q4_K_M",
         parameters = "3B",
-        description = "Strong reasoning and instruction-following. Best balance for most phones."
+        description = "Strong reasoning and instruction-following. Best balance for most phones.",
     )
 
     // ══════════════════════════════════════════════════════════════
@@ -100,7 +100,7 @@ object LlmCatalog {
         sizeBytes = 1_630_000_000L,
         quantization = "Q4_K_M",
         parameters = "2B",
-        description = "Google's compact model. Strong multilingual and code performance."
+        description = "Google's compact model. Strong multilingual and code performance.",
     )
 
     // ══════════════════════════════════════════════════════════════
@@ -116,7 +116,7 @@ object LlmCatalog {
         sizeBytes = 2_390_000_000L,
         quantization = "Q4_K_M",
         parameters = "3.8B",
-        description = "Microsoft's efficient model. Excellent reasoning relative to size."
+        description = "Microsoft's efficient model. Excellent reasoning relative to size.",
     )
 
     // ══════════════════════════════════════════════════════════════
@@ -131,6 +131,6 @@ object LlmCatalog {
         LLAMA_3_2_1B_INSTRUCT_Q4,
         GEMMA_2_2B_INSTRUCT_Q4,
         LLAMA_3_2_3B_INSTRUCT_Q4,
-        PHI_3_5_MINI_INSTRUCT_Q4
+        PHI_3_5_MINI_INSTRUCT_Q4,
     )
 }

@@ -8,12 +8,12 @@ import javax.sound.sampled.TargetDataLine
 
 @Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 actual class AudioRecorder actual constructor() {
-
     // 16 kHz, 16-bit, mono, signed, little-endian
     private val format = AudioFormat(16000f, 16, 1, true, false)
     private var line: TargetDataLine? = null
     private val collectedBytes = mutableListOf<Byte>()
     private var recordingThread: Thread? = null
+
     @Volatile private var isRecording = false
 
     actual fun startRecording() {
@@ -22,11 +22,12 @@ actual class AudioRecorder actual constructor() {
         val info = DataLine.Info(TargetDataLine::class.java, format)
         if (!AudioSystem.isLineSupported(info)) return
 
-        val dataLine = try {
-            AudioSystem.getLine(info) as TargetDataLine
-        } catch (e: LineUnavailableException) {
-            return
-        }
+        val dataLine =
+            try {
+                AudioSystem.getLine(info) as TargetDataLine
+            } catch (e: LineUnavailableException) {
+                return
+            }
 
         try {
             dataLine.open(format)
@@ -39,17 +40,18 @@ actual class AudioRecorder actual constructor() {
         isRecording = true
         dataLine.start()
 
-        recordingThread = Thread {
-            val buffer = ByteArray(4096)
-            while (isRecording) {
-                val read = dataLine.read(buffer, 0, buffer.size)
-                if (read > 0) {
-                    synchronized(collectedBytes) {
-                        for (i in 0 until read) collectedBytes.add(buffer[i])
+        recordingThread =
+            Thread {
+                val buffer = ByteArray(4096)
+                while (isRecording) {
+                    val read = dataLine.read(buffer, 0, buffer.size)
+                    if (read > 0) {
+                        synchronized(collectedBytes) {
+                            for (i in 0 until read) collectedBytes.add(buffer[i])
+                        }
                     }
                 }
-            }
-        }.also { it.start() }
+            }.also { it.start() }
     }
 
     actual fun stopRecording(): FloatArray {

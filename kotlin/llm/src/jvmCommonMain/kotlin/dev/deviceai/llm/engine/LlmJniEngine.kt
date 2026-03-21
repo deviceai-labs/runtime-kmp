@@ -33,9 +33,13 @@ internal object LlmJniEngine : LlmEngine {
         var text = ""
         val ms = measureTimeMillis {
             text = nativeGenerate(
-                roles, contents,
-                config.maxTokens, config.temperature,
-                config.topP, config.topK, config.repeatPenalty
+                roles,
+                contents,
+                config.maxTokens,
+                config.temperature,
+                config.topP,
+                config.topK,
+                config.repeatPenalty,
             )
         }
         return LlmResult(
@@ -43,24 +47,31 @@ internal object LlmJniEngine : LlmEngine {
             tokenCount = text.split(" ").size,
             promptTokenCount = 0,
             finishReason = FinishReason.STOP,
-            generationTimeMs = ms
+            generationTimeMs = ms,
         )
     }
 
-    override fun generateStream(messages: List<LlmMessage>, config: LlmGenConfig): Flow<String> =
-        channelFlow {
-            val roles = messages.map { it.role.name.lowercase() }.toTypedArray()
-            val contents = messages.map { it.content }.toTypedArray()
-            nativeGenerateStream(
-                roles, contents,
-                config.maxTokens, config.temperature,
-                config.topP, config.topK, config.repeatPenalty,
-                object : LlmStreamInternal {
-                    override fun onToken(token: String) { trySend(token) }
-                    override fun onError(message: String) { close(RuntimeException(message)) }
+    override fun generateStream(messages: List<LlmMessage>, config: LlmGenConfig): Flow<String> = channelFlow {
+        val roles = messages.map { it.role.name.lowercase() }.toTypedArray()
+        val contents = messages.map { it.content }.toTypedArray()
+        nativeGenerateStream(
+            roles,
+            contents,
+            config.maxTokens,
+            config.temperature,
+            config.topP,
+            config.topK,
+            config.repeatPenalty,
+            object : LlmStreamInternal {
+                override fun onToken(token: String) {
+                    trySend(token)
                 }
-            )
-        }.flowOn(Dispatchers.IO)
+                override fun onError(message: String) {
+                    close(RuntimeException(message))
+                }
+            },
+        )
+    }.flowOn(Dispatchers.IO)
 
     override fun cancelGeneration() = nativeCancel()
 
@@ -68,23 +79,29 @@ internal object LlmJniEngine : LlmEngine {
     //                    NATIVE DECLARATIONS
     // ──────────────────────────────────────────────────────────────
 
-    private external fun nativeInit(
-        modelPath: String, contextSize: Int, maxThreads: Int, useGpu: Boolean
-    ): Boolean
+    private external fun nativeInit(modelPath: String, contextSize: Int, maxThreads: Int, useGpu: Boolean): Boolean
 
     private external fun nativeShutdown()
 
     private external fun nativeGenerate(
-        roles: Array<String>, contents: Array<String>,
-        maxTokens: Int, temperature: Float,
-        topP: Float, topK: Int, repeatPenalty: Float
+        roles: Array<String>,
+        contents: Array<String>,
+        maxTokens: Int,
+        temperature: Float,
+        topP: Float,
+        topK: Int,
+        repeatPenalty: Float,
     ): String
 
     private external fun nativeGenerateStream(
-        roles: Array<String>, contents: Array<String>,
-        maxTokens: Int, temperature: Float,
-        topP: Float, topK: Int, repeatPenalty: Float,
-        callback: LlmStreamInternal
+        roles: Array<String>,
+        contents: Array<String>,
+        maxTokens: Int,
+        temperature: Float,
+        topP: Float,
+        topK: Int,
+        repeatPenalty: Float,
+        callback: LlmStreamInternal,
     )
 
     private external fun nativeCancel()

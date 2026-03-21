@@ -38,10 +38,7 @@ import kotlinx.coroutines.flow.onEach
  * session.close()         // unload the model and free all resources
  * ```
  */
-class ChatSession internal constructor(
-    modelPath: String,
-    private val config: ChatConfig,
-) {
+class ChatSession internal constructor(modelPath: String, private val config: ChatConfig) {
     /** `true` if the model loaded successfully and the session is ready for inference. */
     val isReady: Boolean = LlmCppBridge.initLlm(modelPath, config.toInitConfig())
 

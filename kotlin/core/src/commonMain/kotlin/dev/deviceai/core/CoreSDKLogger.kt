@@ -21,7 +21,7 @@ data class LogEvent(
     val tag: String,
     val message: String,
     val throwable: Throwable? = null,
-    val timestampMs: Long
+    val timestampMs: Long,
 )
 
 /**
@@ -47,7 +47,6 @@ data class LogEvent(
  * ```
  */
 object CoreSDKLogger {
-
     /**
      * Minimum level to emit. Events below this level are silently dropped.
      * Controlled by [DeviceAIRuntime.configure] — not directly settable by SDK consumers.
@@ -64,11 +63,12 @@ object CoreSDKLogger {
      * Keeps DeviceAIRuntime from reaching into CoreSDKLogger's internals directly.
      */
     internal fun configure(environment: Environment, handler: ((LogEvent) -> Unit)?) {
-        minLevel = when (environment) {
-            Environment.Development -> LogLevel.DEBUG
-            Environment.Staging     -> LogLevel.DEBUG
-            Environment.Production  -> LogLevel.WARN
-        }
+        minLevel =
+            when (environment) {
+                Environment.Development -> LogLevel.DEBUG
+                Environment.Staging -> LogLevel.DEBUG
+                Environment.Production -> LogLevel.WARN
+            }
         customHandler = handler
     }
 
@@ -80,17 +80,13 @@ object CoreSDKLogger {
         customHandler = handler
     }
 
-    fun debug(tag: String, message: String) =
-        log(LogLevel.DEBUG, tag, message)
+    fun debug(tag: String, message: String) = log(LogLevel.DEBUG, tag, message)
 
-    fun info(tag: String, message: String) =
-        log(LogLevel.INFO, tag, message)
+    fun info(tag: String, message: String) = log(LogLevel.INFO, tag, message)
 
-    fun warn(tag: String, message: String, throwable: Throwable? = null) =
-        log(LogLevel.WARN, tag, message, throwable)
+    fun warn(tag: String, message: String, throwable: Throwable? = null) = log(LogLevel.WARN, tag, message, throwable)
 
-    fun error(tag: String, message: String, throwable: Throwable? = null) =
-        log(LogLevel.ERROR, tag, message, throwable)
+    fun error(tag: String, message: String, throwable: Throwable? = null) = log(LogLevel.ERROR, tag, message, throwable)
 
     private fun log(level: LogLevel, tag: String, message: String, throwable: Throwable? = null) {
         if (level.ordinal < minLevel.ordinal) return

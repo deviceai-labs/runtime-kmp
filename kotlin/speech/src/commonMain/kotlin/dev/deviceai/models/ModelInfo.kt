@@ -13,7 +13,8 @@ enum class WhisperSize(val label: String) {
     LARGE_V1("large-v1"),
     LARGE_V2("large-v2"),
     LARGE_V3("large-v3"),
-    LARGE_V3_TURBO("large-v3-turbo");
+    LARGE_V3_TURBO("large-v3-turbo"),
+    ;
 
     companion object {
         fun fromString(s: String): WhisperSize? = entries.find { it.label == s }
@@ -25,7 +26,8 @@ enum class WhisperSize(val label: String) {
  */
 enum class Quantization(val label: String) {
     Q5_1("q5_1"),
-    Q8_0("q8_0");
+    Q8_0("q8_0"),
+    ;
 
     companion object {
         fun fromString(s: String): Quantization? = entries.find { it.label == s }
@@ -39,7 +41,8 @@ enum class PiperQuality(val label: String) {
     X_LOW("x_low"),
     LOW("low"),
     MEDIUM("medium"),
-    HIGH("high");
+    HIGH("high"),
+    ;
 
     companion object {
         fun fromString(s: String): PiperQuality? = entries.find { it.label == s }
@@ -56,7 +59,7 @@ data class LanguageInfo(
     val region: String,
     val nameNative: String,
     val nameEnglish: String,
-    val countryEnglish: String
+    val countryEnglish: String,
 )
 
 /**
@@ -70,7 +73,7 @@ data class WhisperModelInfo(
     val size: WhisperSize,
     val isEnglishOnly: Boolean,
     val quantization: Quantization?,
-    val downloadUrl: String
+    val downloadUrl: String,
 ) : ModelInfo
 
 /**
@@ -86,11 +89,11 @@ data class PiperVoiceInfo(
     val numSpeakers: Int,
     val speakerIdMap: Map<String, Int>,
     val modelUrl: String,
-    val configUrl: String
+    val configUrl: String,
 ) : ModelInfo
 
 // LocalModelType constants for runtime-speech model types.
 // Defined here as companion extensions so runtime-core never needs to be modified
 // when new modules are added — Open/Closed Principle.
 val LocalModelType.Companion.WHISPER get() = LocalModelType("WHISPER")
-val LocalModelType.Companion.PIPER   get() = LocalModelType("PIPER")
+val LocalModelType.Companion.PIPER get() = LocalModelType("PIPER")

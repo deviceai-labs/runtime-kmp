@@ -31,7 +31,7 @@ data class LocalModel(
     val modelType: LocalModelType,
     val modelPath: String,
     val configPath: String? = null,
-    val downloadedAt: Long
+    val downloadedAt: Long,
 )
 
 /**
@@ -55,6 +55,8 @@ data class LocalModelType(val id: String) {
 
 private object LocalModelTypeSerializer : KSerializer<LocalModelType> {
     override val descriptor = PrimitiveSerialDescriptor("LocalModelType", PrimitiveKind.STRING)
+
     override fun serialize(encoder: Encoder, value: LocalModelType) = encoder.encodeString(value.id)
+
     override fun deserialize(decoder: Decoder) = LocalModelType(decoder.decodeString())
 }

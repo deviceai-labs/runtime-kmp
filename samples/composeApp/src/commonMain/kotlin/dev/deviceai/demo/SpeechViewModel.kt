@@ -5,7 +5,6 @@ import dev.deviceai.SttConfig
 import dev.deviceai.models.DownloadProgress
 import dev.deviceai.models.ModelRegistry
 import dev.deviceai.models.WhisperSize
-import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -16,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.TimeSource
 
 private const val TARGET_MODEL_ID = "ggml-tiny.en.bin"
 
@@ -23,8 +23,11 @@ private const val TARGET_MODEL_ID = "ggml-tiny.en.bin"
 
 sealed class LoadingState {
     object Initializing : LoadingState()
+
     data class Downloading(val progress: DownloadProgress) : LoadingState()
+
     object Ready : LoadingState()
+
     data class Error(val message: String) : LoadingState()
 }
 
@@ -32,16 +35,19 @@ sealed class LoadingState {
 
 sealed class RecordingState {
     object Idle : RecordingState()
+
     object Recording : RecordingState()
+
     object Transcribing : RecordingState()
+
     data class Result(val text: String) : RecordingState()
+
     data class Error(val message: String) : RecordingState()
 }
 
 // ── ViewModel (Koin single — survives across screens) ─────────────────────────
 
 class SpeechViewModel(private val audioRecorder: AudioRecorder) {
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _loadingState = MutableStateFlow<LoadingState>(LoadingState.Initializing)
@@ -71,28 +77,31 @@ class SpeechViewModel(private val audioRecorder: AudioRecorder) {
             }
 
             // Discover from HuggingFace catalog
-            val models = try {
-                ModelRegistry.getWhisperModels()
-            } catch (e: Exception) {
-                _loadingState.value = LoadingState.Error("Cannot reach model server: ${e.message}")
-                return@launch
-            }
+            val models =
+                try {
+                    ModelRegistry.getWhisperModels()
+                } catch (e: Exception) {
+                    _loadingState.value = LoadingState.Error("Cannot reach model server: ${e.message}")
+                    return@launch
+                }
 
-            val target = models.firstOrNull { it.id == TARGET_MODEL_ID }
-                ?: models.firstOrNull { it.size == WhisperSize.TINY && it.isEnglishOnly }
+            val target =
+                models.firstOrNull { it.id == TARGET_MODEL_ID }
+                    ?: models.firstOrNull { it.size == WhisperSize.TINY && it.isEnglishOnly }
 
             if (target == null) {
                 _loadingState.value = LoadingState.Error("Whisper Tiny model not found in catalog.")
                 return@launch
             }
 
-            val result = ModelRegistry.download(target) { progress ->
-                _loadingState.value = LoadingState.Downloading(progress)
-            }
+            val result =
+                ModelRegistry.download(target) { progress ->
+                    _loadingState.value = LoadingState.Downloading(progress)
+                }
 
             result.fold(
                 onSuccess = { local -> onModelReady(local.modelPath) },
-                onFailure = { e -> _loadingState.value = LoadingState.Error("Download failed: ${e.message}") }
+                onFailure = { e -> _loadingState.value = LoadingState.Error("Download failed: ${e.message}") },
             )
         }
     }
@@ -108,7 +117,8 @@ class SpeechViewModel(private val audioRecorder: AudioRecorder) {
         when (_recordingState.value) {
             is RecordingState.Idle,
             is RecordingState.Result,
-            is RecordingState.Error -> startRecording()
+            is RecordingState.Error,
+            -> startRecording()
             is RecordingState.Recording -> stopAndTranscribe()
             is RecordingState.Transcribing -> Unit // ignore taps while processing
         }
@@ -132,8 +142,10 @@ class SpeechViewModel(private val audioRecorder: AudioRecorder) {
             val t1 = clock.markNow()
             val audioSec = samples.size / 16000f
             val audioSecStr = "${(audioSec).toInt()}.${((audioSec % 1) * 10).toInt()}"
-            println("[LATENCY] stopRecording():      ${(t1 - t0).inWholeMilliseconds} ms  " +
-                    "(${samples.size} samples = ${audioSecStr}s of audio)")
+            println(
+                "[LATENCY] stopRecording():      ${(t1 - t0).inWholeMilliseconds} ms  " +
+                    "(${samples.size} samples = ${audioSecStr}s of audio)",
+            )
 
             if (samples.isEmpty()) {
                 _recordingState.value = RecordingState.Error("No audio captured — check microphone permission.")
@@ -142,15 +154,22 @@ class SpeechViewModel(private val audioRecorder: AudioRecorder) {
             _recordingState.value = RecordingState.Transcribing
 
             val t2 = clock.markNow()
-            val text = withContext(Dispatchers.IO) {
-                SpeechBridge.transcribeAudio(samples)
-            }
+            val text =
+                withContext(Dispatchers.IO) {
+                    SpeechBridge.transcribeAudio(samples)
+                }
             val t3 = clock.markNow()
-            println("[LATENCY] transcribeAudio():    ${(t3 - t2).inWholeMilliseconds} ms  " +
-                    "(Kotlin → JNI → whisper → JNI → Kotlin)")
+            println(
+                "[LATENCY] transcribeAudio():    ${(t3 - t2).inWholeMilliseconds} ms  " +
+                    "(Kotlin → JNI → whisper → JNI → Kotlin)",
+            )
             println("[LATENCY] ── TOTAL Kotlin ──    ${(t3 - t0).inWholeMilliseconds} ms")
-            _recordingState.value = if (text.isNotBlank()) RecordingState.Result(text.trim())
-                                    else RecordingState.Result("(no speech detected)")
+            _recordingState.value =
+                if (text.isNotBlank()) {
+                    RecordingState.Result(text.trim())
+                } else {
+                    RecordingState.Result("(no speech detected)")
+                }
         }
     }
 
@@ -158,8 +177,12 @@ class SpeechViewModel(private val audioRecorder: AudioRecorder) {
 
     private fun onModelReady(modelPath: String) {
         val ok = SpeechBridge.initStt(modelPath, SttConfig(language = "en"))
-        _loadingState.value = if (ok) LoadingState.Ready
-                              else LoadingState.Error("Failed to initialize STT engine.")
+        _loadingState.value =
+            if (ok) {
+                LoadingState.Ready
+            } else {
+                LoadingState.Error("Failed to initialize STT engine.")
+            }
     }
 
     fun dispose() {

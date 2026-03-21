@@ -8,11 +8,10 @@ import kotlinx.coroutines.flow.Flow
 actual object LlmCppBridge {
     actual fun initLlm(modelPath: String, config: LlmInitConfig) = LlmJniEngine.init(modelPath, config)
     actual fun shutdown() = LlmJniEngine.shutdown()
-    actual fun generate(messages: List<LlmMessage>, config: LlmGenConfig) =
-        LlmJniEngine.generate(
-            if (config.ragStore != null) RagAugmentor.augment(messages, config) else messages,
-            config,
-        )
+    actual fun generate(messages: List<LlmMessage>, config: LlmGenConfig) = LlmJniEngine.generate(
+        if (config.ragStore != null) RagAugmentor.augment(messages, config) else messages,
+        config,
+    )
     actual fun generateStream(messages: List<LlmMessage>, config: LlmGenConfig): Flow<String> =
         LlmJniEngine.generateStream(
             if (config.ragStore != null) RagAugmentor.augment(messages, config) else messages,

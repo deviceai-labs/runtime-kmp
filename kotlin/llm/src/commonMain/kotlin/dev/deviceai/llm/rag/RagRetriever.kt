@@ -16,7 +16,7 @@ interface RagRetriever {
      *
      * @param query  The user's question or search term.
      * @param topK   Maximum number of chunks to return.
-     * @return       Chunks sorted by descending relevance score.
+     * @return Chunks sorted by descending relevance score.
      */
     fun retrieve(query: String, topK: Int): List<RagChunk>
 }

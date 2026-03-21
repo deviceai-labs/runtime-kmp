@@ -22,7 +22,7 @@ internal object RagAugmentor {
         val chunks = store.retrieve(query, config.ragTopK)
         if (chunks.isEmpty()) return messages
 
-        val context  = chunks.joinToString("\n\n---\n\n") { it.text }
+        val context = chunks.joinToString("\n\n---\n\n") { it.text }
         val injected = config.ragPromptTemplate.replace("{context}", context)
 
         // Prepend to existing system message, or insert a new one at position 0
@@ -30,7 +30,7 @@ internal object RagAugmentor {
         return if (systemIdx >= 0) {
             messages.toMutableList().also {
                 it[systemIdx] = it[systemIdx].copy(
-                    content = injected + "\n\n" + it[systemIdx].content
+                    content = injected + "\n\n" + it[systemIdx].content,
                 )
             }
         } else {
