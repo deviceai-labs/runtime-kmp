@@ -21,7 +21,7 @@ import kotlin.time.measureTime
 actual object LlmCppBridge {
 
     actual fun initLlm(modelPath: String, config: LlmInitConfig): Boolean =
-        llm_init(modelPath, config.contextSize, config.maxThreads, config.useGpu)
+        llm_init(modelPath, config.maxThreads, config.useGpu)
 
     actual fun shutdown() = llm_shutdown()
 

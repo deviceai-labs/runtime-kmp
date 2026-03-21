@@ -6,10 +6,9 @@ package dev.deviceai.llm
  * Passed as a DSL block to [dev.deviceai.core.LlmModule.chat]:
  * ```kotlin
  * val session = DeviceAI.llm.chat(modelPath) {
- *     systemPrompt  = "You are a helpful assistant."
- *     temperature   = 0.8f
- *     maxTokens     = 512
- *     useGpu        = true  // false = CPU only
+ *     systemPrompt = "You are a helpful assistant."
+ *     temperature  = 0.8f
+ *     maxTokens    = 512
  * }
  * ```
  *
@@ -59,13 +58,6 @@ class ChatConfig {
     // ── Engine (init-time) ────────────────────────────────────────────────────
 
     /**
-     * KV-cache context window size in tokens.
-     * Larger = longer memory, higher RAM usage.
-     * Default: 4096.
-     */
-    var contextSize: Int = 4096
-
-    /**
      * Number of CPU threads for inference.
      * Default: 4.
      */
@@ -80,9 +72,8 @@ class ChatConfig {
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     internal fun toInitConfig() = LlmInitConfig(
-        contextSize = contextSize,
-        maxThreads  = threads,
-        useGpu      = useGpu,
+        maxThreads = threads,
+        useGpu     = useGpu,
     )
 
     internal fun toGenConfig() = LlmGenConfig(

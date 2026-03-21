@@ -133,7 +133,7 @@ static std::string do_generate(
 
 extern "C" {
 
-bool llm_init(const char *model_path, int context_size, int max_threads, bool use_gpu) {
+bool llm_init(const char *model_path, int max_threads, bool use_gpu) {
     cleanup();
 
     llama_model_params mparams = llama_model_default_params();
@@ -146,7 +146,8 @@ bool llm_init(const char *model_path, int context_size, int max_threads, bool us
     }
 
     llama_context_params cparams = llama_context_default_params();
-    cparams.n_ctx     = context_size;
+    // n_ctx = 0 → llama.cpp uses the model's native context size from GGUF metadata
+    cparams.n_ctx     = 0;
     cparams.n_threads = max_threads;
 
     g_ctx = llama_init_from_model(g_model, cparams);
@@ -158,7 +159,7 @@ bool llm_init(const char *model_path, int context_size, int max_threads, bool us
     }
 
     fprintf(stdout, "[LlmIos] Initialized: ctx=%d threads=%d gpu=%d\n",
-            context_size, max_threads, use_gpu);
+            llama_n_ctx(g_ctx), max_threads, use_gpu);
     return true;
 }
 
