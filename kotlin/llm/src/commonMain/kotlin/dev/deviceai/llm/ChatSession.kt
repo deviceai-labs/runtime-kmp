@@ -1,8 +1,14 @@
 package dev.deviceai.llm
 
+import dev.deviceai.core.InternalDeviceAiApi
+import dev.deviceai.core.telemetry.InferenceEvent
+import dev.deviceai.core.telemetry.TelemetryReporter
+import dev.deviceai.models.currentTimeMillis
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * A stateful LLM conversation session.
@@ -38,12 +44,16 @@ import kotlinx.coroutines.flow.onEach
  * session.close()         // unload the model and free all resources
  * ```
  */
+@OptIn(InternalDeviceAiApi::class, ExperimentalUuidApi::class)
 class ChatSession internal constructor(
     modelPath: String,
     private val config: ChatConfig,
 ) {
     /** `true` if the model loaded successfully and the session is ready for inference. */
     val isReady: Boolean = LlmCppBridge.initLlm(modelPath, config.toInitConfig())
+
+    // Model filename without path or extension — used as telemetry model ID.
+    private val modelId: String = modelPath.substringAfterLast('/').substringBeforeLast('.')
 
     private val _history = mutableListOf<LlmMessage>()
 
@@ -95,14 +105,32 @@ class ChatSession internal constructor(
         val genConfig = (overrideConfig ?: config).toGenConfig()
         val reply = StringBuilder()
 
+        val startMs = currentTimeMillis()
+        val genId = Uuid.random().toString()
+        var tokenCount = 0
+
         return LlmCppBridge.generateStream(messages, genConfig)
-            .onEach { token -> reply.append(token) }
+            .onEach { token ->
+                reply.append(token)
+                tokenCount++
+            }
             .onCompletion { error ->
                 if (error == null && reply.isNotEmpty()) {
                     _history.add(LlmMessage(LlmRole.ASSISTANT, reply.toString()))
                 } else if (error != null) {
                     _history.removeLastOrNull() // roll back user message for clean retry
                 }
+                val totalMs = currentTimeMillis() - startMs
+                TelemetryReporter.record(InferenceEvent(
+                    generationId   = genId,
+                    modelId        = modelId,
+                    inputTokens    = estimateInputTokens(messages),
+                    outputTokens   = tokenCount,
+                    totalMs        = totalMs,
+                    tokensPerSecond = if (totalMs > 0) tokenCount * 1000f / totalMs else 0f,
+                    success        = error == null,
+                    timestampMs    = currentTimeMillis(),
+                ))
             }
     }
 
@@ -124,12 +152,35 @@ class ChatSession internal constructor(
         }
 
         val genConfig = (overrideConfig ?: config).toGenConfig()
+        val startMs = currentTimeMillis()
+
         return try {
             val result = LlmCppBridge.generate(messages, genConfig)
             _history.add(LlmMessage(LlmRole.ASSISTANT, result.text))
+            TelemetryReporter.record(InferenceEvent(
+                generationId    = Uuid.random().toString(),
+                modelId         = modelId,
+                inputTokens     = estimateInputTokens(messages),
+                outputTokens    = result.tokenCount,
+                totalMs         = result.generationTimeMs,
+                tokensPerSecond = if (result.generationTimeMs > 0)
+                    result.tokenCount * 1000f / result.generationTimeMs else 0f,
+                success         = true,
+                timestampMs     = currentTimeMillis(),
+            ))
             result.text
         } catch (e: Exception) {
             _history.removeLastOrNull() // roll back user message for clean retry
+            TelemetryReporter.record(InferenceEvent(
+                generationId    = Uuid.random().toString(),
+                modelId         = modelId,
+                inputTokens     = estimateInputTokens(messages),
+                outputTokens    = 0,
+                totalMs         = currentTimeMillis() - startMs,
+                tokensPerSecond = 0f,
+                success         = false,
+                timestampMs     = currentTimeMillis(),
+            ))
             throw e
         }
     }
@@ -142,4 +193,10 @@ class ChatSession internal constructor(
 
     /** Unload the model and release all engine resources. Do not use the session after this. */
     fun close() = LlmCppBridge.shutdown()
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** Rough token count estimate — 1 token ≈ 4 chars for English text. */
+    private fun estimateInputTokens(messages: List<LlmMessage>): Int =
+        messages.sumOf { it.content.length } / 4
 }
