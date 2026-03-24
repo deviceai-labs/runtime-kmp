@@ -36,7 +36,7 @@ object TelemetryReporter {
     private const val TAG = "Telemetry"
     private const val MAX_BUFFER = 100
 
-    private val lock = Any()
+    private val lock = TelemetryLock()
 
     // ── Protected by lock ─────────────────────────────────────────────────────
     private val buffer = mutableListOf<TelemetryEvent>()
@@ -44,6 +44,8 @@ object TelemetryReporter {
     private var minuteWindowStart = 0L
 
     // ── Public API ────────────────────────────────────────────────────────────
+
+    private enum class RecordResult { ACCEPTED, RATE_LIMITED }
 
     /**
      * Record one telemetry event.
@@ -54,25 +56,22 @@ object TelemetryReporter {
         if (config.telemetry == TelemetryMode.OFF) return
         if (!passesSampling(config.telemetrySamplingRate)) return
 
-        val accepted: Boolean
-        val rateLimitHit: Boolean
-
-        synchronized(lock) {
-            rateLimitHit = !passesRateLimitLocked(config.telemetryMaxPerMinute)
-            if (rateLimitHit) {
-                accepted = false
+        val result = lock.withLock {
+            if (!passesRateLimitLocked(config.telemetryMaxPerMinute)) {
+                RecordResult.RATE_LIMITED
             } else {
                 if (buffer.size >= MAX_BUFFER) buffer.removeAt(0)
                 buffer.add(event)
-                accepted = true
+                RecordResult.ACCEPTED
             }
         }
 
         // Logging outside lock — no contention on I/O.
-        if (rateLimitHit) {
-            CoreSDKLogger.debug(TAG, "rate cap hit (${config.telemetryMaxPerMinute}/min) — event dropped")
-        } else if (accepted) {
-            CoreSDKLogger.debug(TAG, formatEvent(event))
+        when (result) {
+            RecordResult.RATE_LIMITED ->
+                CoreSDKLogger.debug(TAG, "rate cap hit (${config.telemetryMaxPerMinute}/min) — event dropped")
+            RecordResult.ACCEPTED ->
+                CoreSDKLogger.debug(TAG, formatEvent(event))
         }
 
         // TODO Phase 2: trigger async flush when mode is MANAGED_* and
@@ -94,12 +93,13 @@ object TelemetryReporter {
         val effectiveMode = resolveEffectiveMode(config.telemetry, config.apiKey)
         if (effectiveMode == TelemetryMode.OFF || effectiveMode == TelemetryMode.LOCAL) return
 
-        val snapshot: List<TelemetryEvent>
-        synchronized(lock) {
-            if (buffer.isEmpty()) return
-            snapshot = buffer.toList()
+        val snapshot = lock.withLock {
+            if (buffer.isEmpty()) return@withLock emptyList()
+            val copy = buffer.toList()
             buffer.clear()
+            copy
         }
+        if (snapshot.isEmpty()) return
 
         // Logging and network I/O outside lock.
         CoreSDKLogger.debug(TAG,
@@ -160,12 +160,12 @@ object TelemetryReporter {
             "LLM model=${event.modelId} " +
             "in=${event.inputTokens}tok(${if (event.inputTokensEstimated) "est" else "exact"}) " +
             "out_pieces=${event.outputPieces} out_tokens=${event.outputTokens ?: "?"} " +
-            "%.1ftok/s ${event.totalMs}ms".format(event.tokensPerSecond) +
+            "${event.tokensPerSecond.fmt1dp()}tok/s ${event.totalMs}ms" +
             " success=${event.success}" +
             (event.errorCode?.let { " err=$it" } ?: "")
         is TelemetryEvent.SttTranscription ->
             "STT model=${event.modelId} audio=${event.audioDurationMs}ms " +
-            "rtf=%.2f".format(event.realTimeFactor) +
+            "rtf=${event.realTimeFactor.fmt2dp()}" +
             " success=${event.success}"
         is TelemetryEvent.TtsSynthesis ->
             "TTS model=${event.modelId} chars=${event.inputChars} " +
