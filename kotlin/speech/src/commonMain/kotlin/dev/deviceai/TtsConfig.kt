@@ -1,7 +1,7 @@
 package dev.deviceai
 
 /**
- * Configuration for text-to-speech.
+ * Configuration for text-to-speech (sherpa-onnx backend).
  */
 data class TtsConfig(
     /**
@@ -15,18 +15,14 @@ data class TtsConfig(
     val speechRate: Float = 1.0f,
 
     /**
-     * Output sample rate in Hz.
+     * Path to the espeak-ng-data directory bundled inside sherpa-onnx.
+     * On Android: extract from assets to cacheDir and pass the absolute path.
+     * On iOS: use the path inside the app bundle.
      */
-    val sampleRate: Int = 22050,
+    val dataDir: String = "",
 
     /**
-     * Seconds of silence between sentences.
+     * Path to voices.bin — required for Kokoro models, leave empty for VITS.
      */
-    val sentenceSilence: Float = 0.2f,
-
-    /**
-     * Path to espeak-ng-data directory.
-     * Required for phonemization. On Android/iOS this is extracted from assets.
-     */
-    val espeakDataPath: String? = null
+    val voicesPath: String = ""
 )
