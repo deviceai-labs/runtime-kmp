@@ -46,15 +46,14 @@ actual object SpeechBridge {
     //                    TEXT-TO-SPEECH (TTS)
     // ══════════════════════════════════════════════════════════════
 
-    actual fun initTts(modelPath: String, configPath: String, config: TtsConfig): Boolean =
+    actual fun initTts(modelPath: String, tokensPath: String, config: TtsConfig): Boolean =
         nativeInitTts(
             modelPath,
-            configPath,
-            config.espeakDataPath ?: "",
+            tokensPath,
+            config.dataDir,
+            config.voicesPath,
             config.speakerId ?: -1,
-            config.speechRate,
-            config.sampleRate,
-            config.sentenceSilence
+            config.speechRate
         )
 
     actual fun synthesize(text: String): ShortArray =
@@ -111,12 +110,11 @@ actual object SpeechBridge {
     // TTS
     private external fun nativeInitTts(
         modelPath: String,
-        configPath: String,
-        espeakDataPath: String,
+        tokensPath: String,
+        dataDir: String,
+        voicesPath: String,
         speakerId: Int,
-        speechRate: Float,
-        sampleRate: Int,
-        sentenceSilence: Float
+        speechRate: Float
     ): Boolean
 
     private external fun nativeSynthesize(text: String): ShortArray

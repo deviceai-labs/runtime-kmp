@@ -65,16 +65,16 @@ expect object SpeechBridge {
     // ══════════════════════════════════════════════════════════════
 
     /**
-     * Initialize the TTS engine with a Piper voice model.
+     * Initialize the TTS engine with a sherpa-onnx voice model.
      *
      * @param modelPath Absolute path to .onnx model file
-     * @param configPath Absolute path to model's .json config file
+     * @param tokensPath Absolute path to tokens.txt
      * @param config Optional configuration parameters
      * @return true if initialization succeeded
      */
     fun initTts(
         modelPath: String,
-        configPath: String,
+        tokensPath: String,
         config: TtsConfig = TtsConfig()
     ): Boolean
 

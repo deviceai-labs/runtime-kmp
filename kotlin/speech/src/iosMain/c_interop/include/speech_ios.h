@@ -87,20 +87,19 @@ void speech_stt_transcribe_stream(const float *samples, int n_samples,
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Initialize the TTS engine with a Piper voice model.
+ * Initialize the TTS engine with a sherpa-onnx voice model.
  *
- * @param model_path Absolute path to .onnx model file
- * @param config_path Absolute path to model's .json config file
- * @param espeak_data_path Absolute path to espeak-ng-data directory
- * @param speaker_id Speaker ID for multi-speaker models (-1 for default)
+ * @param model_path  Absolute path to .onnx model file
+ * @param tokens_path Absolute path to tokens.txt
+ * @param data_dir    Absolute path to espeak-ng-data directory (bundled in sherpa-onnx)
+ * @param voices_path Absolute path to voices.bin for Kokoro models; "" for VITS
+ * @param speaker_id  Speaker ID for multi-speaker models (-1 for default)
  * @param speech_rate Speech rate multiplier (1.0 = normal)
- * @param sample_rate Output sample rate in Hz
- * @param sentence_silence Seconds of silence between sentences
  * @return true if initialization succeeded
  */
-bool speech_tts_init(const char *model_path, const char *config_path,
-                     const char *espeak_data_path, int speaker_id,
-                     float speech_rate, int sample_rate, float sentence_silence);
+bool speech_tts_init(const char *model_path, const char *tokens_path,
+                     const char *data_dir, const char *voices_path,
+                     int speaker_id, float speech_rate);
 
 /**
  * Synthesize text to audio samples.
